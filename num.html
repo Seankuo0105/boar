@@ -11,11 +11,244 @@
       padding: 20px;
       background: #f8fafc;
       color: #111;
+      text-align: center;
     }
-    h1 { text-align: center; }
-    #controls { text-align: center; margin-bottom: 20px; }
+    h1 { margin-bottom: 20px; }
+    #controls { margin-bottom: 20px; }
     button {
       padding: 10px 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      font-size: 15px;
+    }
+    button:disabled { opacity: 0.5; }
+    #result {
+      font-size: 28px;
+      margin: 20px;
+      font-weight: bold;
+      color: #e11d48;
+      min-height: 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #f1f5f9; }
+    .pig-icon {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 60px;
+      height: 60px;
+    }
+    /* 中央山豬 Overlay */
+    #overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    #overlay img {
+      width: 200px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    #overlay p {
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    #overlay #jumpNumber {
+      font-size: 60px;
+      color: yellow;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎲 選號器</h1>
+<div id="controls">
+  <input type="file" id="fileInput" accept=".csv,.xlsx" />
+  <button onclick="generateTable()">➕ 生成輸入表格</button>
+  <button onclick="showOverlay()">🎯 選號</button>
+  <button onclick="exportTable()">💾 匯出名單</button>
+  <button onclick="window.open('https://seankuo0105.github.io/boar/fruit.html','_blank')">🍎 前往水果遊戲</button>
+</div>
+
+<div id="result">👉 尚未抽籤</div>
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>座號</th>
+      <th>姓名</th>
+      <th>請假/不參與</th>
+      <th>已抽到</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<img src="pig.png" alt="山豬" class="pig-icon">
+
+<!-- 中央 Overlay -->
+<div id="overlay">
+  <img src="pig.png" alt="山豬" id="overlayPig">
+  <p>點山豬開始選號</p>
+  <div id="jumpNumber"></div>
+</div>
+
+<script>
+let students = [];
+let picked = new Set();
+let jumping = false;
+
+// 匯入檔案
+document.getElementById("fileInput").addEventListener("change", handleFile, false);
+function handleFile(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  if (file.name.endsWith(".csv")) {
+    reader.onload = function(e) {
+      const rows = e.target.result.split("\n").map(r => r.split(","));
+      students = rows.filter(r => r[0] && r[1]).map(r => ({
+        number: r[0].trim(),
+        name: r[1].trim(),
+        absent: false
+      }));
+      renderTable();
+    };
+    reader.readAsText(file, "utf-8");
+  } else if (file.name.endsWith(".xlsx")) {
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      students = rows.filter(r => r[0] && r[1]).map(r => ({
+        number: r[0],
+        name: r[1],
+        absent: false
+      }));
+      renderTable();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+// 生成輸入表格
+function generateTable() {
+  let count = prompt("請輸入學生數量：", "10");
+  if (!count) return;
+  students = [];
+  for (let i=1; i<=count; i++) {
+    students.push({ number: i, name: "", absent: false });
+  }
+  renderTable(true);
+}
+
+// 更新表格
+function renderTable(editable=false) {
+  const tbody = document.querySelector("#dataTable tbody");
+  tbody.innerHTML = "";
+  students.forEach((s, idx) => {
+    let row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${s.number}</td>
+      <td contenteditable="${editable}" oninput="students[${idx}].name=this.innerText">${s.name}</td>
+      <td><input type="checkbox" onchange="students[${idx}].absent=this.checked" ${s.absent?"checked":""}></td>
+      <td>${picked.has(s.number) ? "✅" : ""}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// 顯示 Overlay
+function showOverlay() {
+  document.getElementById("overlay").style.display = "flex";
+}
+
+// 點擊 Overlay 或山豬開始跳號
+document.getElementById("overlayPig").addEventListener("click", startJump);
+
+function startJump() {
+  if (jumping) return;
+  jumping = true;
+  let candidates = students.filter(s => !s.absent && !picked.has(s.number));
+  if (candidates.length === 0) {
+    alert("🎉 全部抽完，重置名單！");
+    picked.clear();
+    renderTable();
+    document.getElementById("result").innerText = "👉 尚未抽籤";
+    document.getElementById("overlay").style.display="none";
+    jumping = false;
+    return;
+  }
+
+  const overlay = document.getElementById("overlay");
+  const jumpNumber = document.getElementById("jumpNumber");
+  overlay.style.display = "flex";
+
+  let interval = 50;
+  let count = 0;
+  let maxCount = 20;
+  let timer = setInterval(function tick() {
+    let rand = candidates[Math.floor(Math.random() * candidates.length)];
+    jumpNumber.innerText = rand.number;
+    count++;
+    if(count>=maxCount){
+      clearInterval(timer);
+      let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      picked.add(chosen.number);
+      document.getElementById("result").innerText = `🎯 抽到：${chosen.number} 號 ${chosen.name}`;
+      renderTable();
+      jumpNumber.innerText = chosen.number;
+      setTimeout(()=>{overlay.style.display="none"; jumping=false;},1500);
+    } else {
+      interval += 30;
+      clearInterval(timer);
+      timer = setInterval(tick, interval);
+    }
+  }, interval);
+}
+
+// 匯出 CSV
+function exportTable() {
+  let csv = students.map(s => `${s.number},${s.name}`).join("\n");
+  let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "students.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+
+</body>
+</html>
+
       margin: 5px;
       border: none;
       border-radius: 8px;
