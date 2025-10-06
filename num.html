@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>選號器</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f8fafc;
+      color: #111;
+    }
+    h1 { text-align: center; }
+    #controls { text-align: center; margin-bottom: 20px; }
+    button {
+      padding: 10px 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      font-size: 15px;
+    }
+    button:disabled { opacity: 0.5; }
+    #result {
+      text-align: center;
+      font-size: 24px;
+      margin: 20px;
+      font-weight: bold;
+      color: #e11d48;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #f1f5f9; }
+    .pig-icon {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 60px;
+      height: 60px;
+    }
+    .disabled { background: #94a3b8; }
+  </style>
+</head>
+<body>
+
+  <h1>🎲 選號器</h1>
+  <div id="controls">
+    <input type="file" id="fileInput" accept=".csv,.xlsx" />
+    <button onclick="generateTable()">➕ 生成輸入表格</button>
+    <button onclick="randomPick()">🎯 抽號</button>
+    <button onclick="exportTable()">💾 匯出名單</button>
+    <button onclick="window.location.href='https://seankuo0105.github.io/boar/fruit.html'">🍎 前往水果遊戲</button>
+  </div>
+
+  <div id="result">👉 尚未抽籤</div>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>座號</th>
+        <th>姓名</th>
+        <th>請假/不參與</th>
+        <th>已抽到</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <img src="pig.png" alt="山豬" class="pig-icon">
+
+<script>
+let students = [];
+let picked = new Set();
+
+// 匯入 CSV 或 XLSX
+document.getElementById("fileInput").addEventListener("change", handleFile, false);
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  if (file.name.endsWith(".csv")) {
+    reader.onload = function(e) {
+      const rows = e.target.result.split("\n").map(r => r.split(","));
+      students = rows.filter(r => r[0] && r[1]).map(r => ({
+        number: r[0].trim(),
+        name: r[1].trim(),
+        absent: false
+      }));
+      renderTable();
+    };
+    reader.readAsText(file, "utf-8");
+  } else if (file.name.endsWith(".xlsx")) {
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      students = rows.filter(r => r[0] && r[1]).map(r => ({
+        number: r[0],
+        name: r[1],
+        absent: false
+      }));
+      renderTable();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+// 生成空白表格供輸入
+function generateTable() {
+  let count = prompt("請輸入學生數量：", "10");
+  if (!count) return;
+  students = [];
+  for (let i=1; i<=count; i++) {
+    students.push({ number: i, name: "", absent: false });
+  }
+  renderTable(true);
+}
+
+// 更新表格
+function renderTable(editable=false) {
+  const tbody = document.querySelector("#dataTable tbody");
+  tbody.innerHTML = "";
+  students.forEach((s, idx) => {
+    let row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${s.number}</td>
+      <td contenteditable="${editable}" oninput="students[${idx}].name=this.innerText">${s.name}</td>
+      <td><input type="checkbox" onchange="students[${idx}].absent=this.checked"></td>
+      <td>${picked.has(s.number) ? "✅" : ""}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// 隨機抽號
+function randomPick() {
+  let candidates = students.filter(s => !s.absent && !picked.has(s.number));
+  if (candidates.length === 0) {
+    document.getElementById("result").innerText = "🎉 全部抽完了！";
+    return;
+  }
+  let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  picked.add(chosen.number);
+  document.getElementById("result").innerText = `🎯 抽到：${chosen.number} 號 ${chosen.name}`;
+  renderTable();
+}
+
+// 匯出 CSV
+function exportTable() {
+  let csv = "座號,姓名\n" + students.map(s => `${s.number},${s.name}`).join("\n");
+  let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "students.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+
+</body>
+</html>
