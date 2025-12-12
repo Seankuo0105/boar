@@ -38,7 +38,7 @@
             width: 100%;
             display: flex;
             justify-content: center;
-            gap: 20px; /* 按鈕之間的間距 */
+            gap: 20px;
             pointer-events: auto;
         }
         button {
@@ -55,15 +55,9 @@
             transform: translateY(2px);
             box-shadow: 0 2px rgba(0,0,0,0.5);
         }
-        #spawn-btn {
-            background-color: #d62828; /* 紅色 */
-        }
-        #auto-btn {
-            background-color: #555; /* 預設灰色 */
-        }
-        #auto-btn.active {
-            background-color: #28a745; /* 啟動時變綠色 */
-        }
+        #spawn-btn { background-color: #d62828; }
+        #auto-btn { background-color: #555; }
+        #auto-btn.active { background-color: #28a745; }
     </style>
 </head>
 <body>
@@ -102,7 +96,7 @@
         // 自動掉幣相關變數
         let autoDropEnabled = false;
         let lastAutoDropTime = 0;
-        const autoDropInterval = 100; // 0.1秒 = 100毫秒
+        const autoDropInterval = 100;
         
         const loadingManager = new THREE.LoadingManager();
         loadingManager.onLoad = () => {
@@ -166,15 +160,13 @@
             // --- 建立物件 ---
             createTrapezoidPlatform();
             createPusherWithBackWall(); 
-            createWalls();
+            createWalls(); // 這裡建立了加高的牆壁
 
             // --- 按鈕事件綁定 ---
-            // 1. 手動掉幣
             document.getElementById('spawn-btn').addEventListener('click', () => {
                 spawnRandomCoin();
             });
 
-            // 2. 自動掉幣開關
             const autoBtn = document.getElementById('auto-btn');
             autoBtn.addEventListener('click', () => {
                 autoDropEnabled = !autoDropEnabled;
@@ -194,17 +186,16 @@
         function spawnRandomCoin() {
             const r = Math.random();
             const x = (Math.random() - 0.5) * 4;
-            const y = 8;
-            const z = -4.5;
+            // 因為牆壁變高了，掉落高度也稍微提高一點，確保在視野內
+            const y = 10; 
+            // 因為機身變短了，掉落的 Z 軸位置稍微往前移一點
+            const z = -3.5; 
 
             if (r < 0.65) {
-                // 普通金幣
                 createCoin(x, y, z, 0.6, 0.15, 10, 0xffd700, 0.7, 0.3);
             } else if (r < 0.90) {
-                // 閃亮銀幣
                 createCoin(x, y, z, 0.6, 0.15, 20, 0xeeeeff, 1.0, 0.01);
             } else {
-                // 巨型金幣
                 createCoin(x, y, z, 1.5, 0.3, 100, 0xffd700, 0.8, 0.2);
             }
         }
@@ -239,8 +230,10 @@
             return mesh;
         }
 
+        // 【修改點 1: 機體變短】
         function createTrapezoidPlatform() {
-            const topW = 8, bottomW = 12, h = 1, d = 15;
+            // 將深度 d 從 15 改為 10
+            const topW = 8, bottomW = 12, h = 1, d = 10; 
             const mesh = createTrapezoidMesh(topW, bottomW, h, d, 0x555555);
             mesh.position.set(0, -0.5, 0);
             scene.add(mesh);
@@ -253,7 +246,8 @@
 
         function createPusherWithBackWall() {
             const topW = 8, bottomW = 8, h = 1.2, d = 4;
-            const wallHeight = 2.5; 
+            // 為了配合加高的側牆，推板後牆也稍微加高一點
+            const wallHeight = 3.5; 
             const wallThickness = 0.5; 
             const pusherColor = 0xcc3333;
 
@@ -278,17 +272,36 @@
             world.addBody(pusherBody);
         }
 
+        // 【修改點 2: 牆壁加高 & 配合機身縮短】
         function createWalls() {
             const wallMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3, metalness: 0.2 });
             const wallPhysMat = new CANNON.Material();
-            const meshL = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 16), wallMat);
-            meshL.position.set(-6, 1.5, 0); meshL.rotation.y = -0.15; scene.add(meshL);
+
+            // 新的牆壁參數
+            const wallHeight = 8; // 高度加倍 (原為 4)
+            const wallLength = 12; // 長度縮短以配合機身 (原為 16)
+            const wallPosY = 3.5; // 提高 Y 位置以保持底部對齊 (原為 1.5)
+
+            // 左側牆視覺
+            const meshL = new THREE.Mesh(new THREE.BoxGeometry(1, wallHeight, wallLength), wallMat);
+            meshL.position.set(-6, wallPosY, 0); 
+            meshL.rotation.y = -0.15; 
+            scene.add(meshL);
+
+            // 左側牆物理 (半高, 半長)
             const bodyL = new CANNON.Body({ mass: 0, material: wallPhysMat });
-            bodyL.addShape(new CANNON.Box(new CANNON.Vec3(0.5, 2, 8)));
+            bodyL.addShape(new CANNON.Box(new CANNON.Vec3(0.5, wallHeight/2, wallLength/2)));
             bodyL.position.copy(meshL.position); bodyL.quaternion.copy(meshL.quaternion); world.addBody(bodyL);
-            const meshR = meshL.clone(); meshR.position.set(6, 1.5, 0); meshR.rotation.y = 0.15; scene.add(meshR);
+
+            // 右側牆視覺
+            const meshR = meshL.clone(); 
+            meshR.position.set(6, wallPosY, 0); 
+            meshR.rotation.y = 0.15; 
+            scene.add(meshR);
+
+            // 右側牆物理
             const bodyR = new CANNON.Body({ mass: 0, material: wallPhysMat });
-            bodyR.addShape(new CANNON.Box(new CANNON.Vec3(0.5, 2, 8)));
+            bodyR.addShape(new CANNON.Box(new CANNON.Vec3(0.5, wallHeight/2, wallLength/2)));
             bodyR.position.copy(meshR.position); bodyR.quaternion.copy(meshR.quaternion); world.addBody(bodyR);
         }
 
@@ -322,8 +335,6 @@
             world.fixedStep();
 
             const now = Date.now();
-            
-            // --- 自動掉幣邏輯 ---
             if (autoDropEnabled && now - lastAutoDropTime > autoDropInterval) {
                 spawnRandomCoin();
                 lastAutoDropTime = now;
