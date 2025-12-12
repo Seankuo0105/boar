@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>網頁執行器</title>
-    <link id="dynamic-favicon" rel="icon" href="https://seankuo0105.github.io/boar/pig.png">
+    
+    <link id="app-favicon" rel="icon" type="image/png" href="https://seankuo0105.github.io/boar/pig.png">
     
     <style>
         :root {
@@ -20,8 +21,8 @@
             height: 100%;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            overflow: hidden; /* 防止雙重卷軸 */
+            font-family: 'Consolas', monospace;
+            overflow: hidden;
         }
 
         /* 編輯器容器 */
@@ -31,10 +32,9 @@
             height: 100%;
             padding: 20px;
             box-sizing: border-box;
-            transition: opacity 0.5s;
         }
 
-        /* 輸入區域樣式 */
+        /* 輸入區域樣式 - 預設為空 */
         #code-input {
             flex-grow: 1;
             background-color: #2d2d2d;
@@ -45,7 +45,6 @@
             font-size: 16px;
             resize: none;
             outline: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         #code-input:focus {
@@ -63,20 +62,18 @@
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px 25px;
+            padding: 10px 30px;
             font-size: 18px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.2s, background-color 0.2s;
         }
 
         button:hover {
             background-color: #45a049;
-            transform: scale(1.05);
         }
 
-        /* 執行結果顯示區 (Iframe) */
+        /* 執行結果顯示區 (預設隱藏) */
         #result-frame {
             position: fixed;
             top: 0;
@@ -84,20 +81,20 @@
             width: 100%;
             height: 100%;
             border: none;
-            background-color: white; /* 預設白底，避免透明 */
-            display: none; /* 預設隱藏 */
+            background-color: white;
+            display: none; 
             z-index: 100;
         }
 
-        /* 浮水印樣式 (最上層) */
+        /* 右下角浮水印 (最上層顯示) */
         #watermark {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 100px; /* 可自行調整大小 */
-            opacity: 0.5; /* 半透明 */
-            z-index: 9999; /* 確保永遠在最上層 */
-            pointer-events: none; /* 讓滑鼠點擊穿透，不會擋住操作 */
+            width: 120px; /* 圖片大小 */
+            opacity: 0.4; /* 透明度 40% */
+            z-index: 9999; /* 確保在最上面 */
+            pointer-events: none; /* 讓滑鼠可以穿透圖片點擊後面的東西 */
             user-select: none;
         }
     </style>
@@ -105,77 +102,70 @@
 <body>
 
     <div id="editor-container">
-        <h2 style="margin-top: 0;">HTML 程式碼輸入</h2>
-        <textarea id="code-input" placeholder="在此輸入 HTML 程式碼...
-例如：
-<title>我的新網頁</title>
-<h1>Hello World!</h1>">
-<!DOCTYPE html>
-<html>
-<head>
-    <title>測試網頁</title>
-    <style>
-        body { font-family: sans-serif; padding: 50px; text-align: center; }
-        h1 { color: #333; }
-    </style>
-</head>
-<body>
-    <h1>執行成功！</h1>
-    <p>注意看瀏覽器分頁的標題變了，<br>但右下角的山豬還在。</p>
-</body>
-</html>
-</textarea>
+        <textarea id="code-input" placeholder="請在此貼上或輸入 HTML 程式碼..."></textarea>
         <div class="controls">
-            <button onclick="runCode()">執行 (Run)</button>
+            <button onclick="runCode()">執行</button>
         </div>
     </div>
 
     <iframe id="result-frame"></iframe>
 
-    <img id="watermark" src="https://seankuo0105.github.io/boar/pig.png" alt="Watermark">
+    <img id="watermark" src="https://seankuo0105.github.io/boar/pig.png" alt="山豬浮水印">
 
     <script>
+        const DEFAULT_ICON = "https://seankuo0105.github.io/boar/pig.png";
+
         function runCode() {
             const code = document.getElementById('code-input').value;
             const iframe = document.getElementById('result-frame');
             const editorContainer = document.getElementById('editor-container');
 
-            // 1. 解析使用者的程式碼以獲取 Title 和 Icon
+            // 1. 解析使用者的程式碼
             const parser = new DOMParser();
             const doc = parser.parseFromString(code, "text/html");
 
-            // --- 處理標題 (Title) ---
+            // --- 處理 Title (標題) ---
             const userTitle = doc.querySelector('title');
             if (userTitle && userTitle.innerText.trim() !== "") {
                 document.title = userTitle.innerText;
+            } else {
+                // 如果使用者沒設標題，維持原樣或設為預設
+                // document.title = "網頁執行器"; 
             }
 
-            // --- 處理圖示 (Favicon) ---
-            // 尋找 user code 裡面的 icon link
+            // --- 處理 Favicon (圖示) ---
+            // 檢查使用者代碼中是否有 icon
             const userIcon = doc.querySelector('link[rel*="icon"]');
+            
             if (userIcon && userIcon.href) {
+                // 如果使用者有設定 icon，就換成使用者的
                 changeFavicon(userIcon.href);
+            } else {
+                // 如果使用者「沒有」設定 icon，強制確保是山豬
+                changeFavicon(DEFAULT_ICON);
             }
 
-            // 2. 切換介面顯示
-            editorContainer.style.display = 'none'; // 隱藏編輯器
-            iframe.style.display = 'block'; // 顯示結果
+            // 2. 切換畫面
+            editorContainer.style.display = 'none';
+            iframe.style.display = 'block';
 
-            // 3. 寫入程式碼到 Iframe
+            // 3. 注入程式碼
             iframe.srcdoc = code;
         }
 
-        // 輔助函式：動態更換 Favicon
         function changeFavicon(src) {
-            let link = document.getElementById('dynamic-favicon');
-            // 為了確保瀏覽器重繪，有時需要移除再新增，或直接修改 href
-            if (!link) {
-                link = document.createElement('link');
-                link.id = 'dynamic-favicon';
-                link.rel = 'icon';
-                document.head.appendChild(link);
+            // 移除舊的 link 標籤以確保瀏覽器更新
+            let oldLink = document.getElementById('app-favicon');
+            if (oldLink) {
+                document.head.removeChild(oldLink);
             }
+
+            let link = document.createElement('link');
+            link.id = 'app-favicon';
+            link.rel = 'icon'; 
+            link.type = 'image/png'; // 明確指定類型有助於顯示
             link.href = src;
+            document.head.appendChild(link);
         }
     </script>
 
