@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>硬幣遊戲</title>
+    <title>硬幣遊戲 - 短機身強力推板版</title>
     
     <link rel="icon" href="https://seankuo0105.github.io/boar/pig.png" type="image/png">
 
@@ -93,7 +93,6 @@
         const scoreElement = document.getElementById('score');
         let defaultMaterial;
         
-        // 自動掉幣相關變數
         let autoDropEnabled = false;
         let lastAutoDropTime = 0;
         const autoDropInterval = 100;
@@ -160,9 +159,9 @@
             // --- 建立物件 ---
             createTrapezoidPlatform();
             createPusherWithBackWall(); 
-            createWalls(); // 這裡建立了加高的牆壁
+            createWalls(); 
 
-            // --- 按鈕事件綁定 ---
+            // --- 事件綁定 ---
             document.getElementById('spawn-btn').addEventListener('click', () => {
                 spawnRandomCoin();
             });
@@ -186,10 +185,9 @@
         function spawnRandomCoin() {
             const r = Math.random();
             const x = (Math.random() - 0.5) * 4;
-            // 因為牆壁變高了，掉落高度也稍微提高一點，確保在視野內
             const y = 10; 
-            // 因為機身變短了，掉落的 Z 軸位置稍微往前移一點
-            const z = -3.5; 
+            // 掉落位置調整：因為機身變短，推板行程變長，這裡設定在推板能推到的範圍內
+            const z = -3.0; 
 
             if (r < 0.65) {
                 createCoin(x, y, z, 0.6, 0.15, 10, 0xffd700, 0.7, 0.3);
@@ -230,10 +228,10 @@
             return mesh;
         }
 
-        // 【修改點 1: 機體變短】
+        // 【機體再短一點】
         function createTrapezoidPlatform() {
-            // 將深度 d 從 15 改為 10
-            const topW = 8, bottomW = 12, h = 1, d = 10; 
+            // d 從 10 改為 7
+            const topW = 8, bottomW = 12, h = 1, d = 7; 
             const mesh = createTrapezoidMesh(topW, bottomW, h, d, 0x555555);
             mesh.position.set(0, -0.5, 0);
             scene.add(mesh);
@@ -246,12 +244,10 @@
 
         function createPusherWithBackWall() {
             const topW = 8, bottomW = 8, h = 1.2, d = 4;
-            // 為了配合加高的側牆，推板後牆也稍微加高一點
             const wallHeight = 3.5; 
             const wallThickness = 0.5; 
             const pusherColor = 0xcc3333;
 
-            // 視覺
             pusherMesh = createTrapezoidMesh(topW, bottomW, h, d, pusherColor);
             const wallGeo = new THREE.BoxGeometry(topW, wallHeight, wallThickness);
             const wallMat = new THREE.MeshStandardMaterial({ color: pusherColor, metalness: 0.3, roughness: 0.6 });
@@ -261,7 +257,6 @@
             pusherMesh.add(backWallMesh); 
             scene.add(pusherMesh);
 
-            // 物理
             pusherBody = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: defaultMaterial });
             const baseShape = new CANNON.Box(new CANNON.Vec3(topW/2, h/2, d/2));
             pusherBody.addShape(baseShape); 
@@ -272,34 +267,29 @@
             world.addBody(pusherBody);
         }
 
-        // 【修改點 2: 牆壁加高 & 配合機身縮短】
         function createWalls() {
             const wallMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3, metalness: 0.2 });
             const wallPhysMat = new CANNON.Material();
 
-            // 新的牆壁參數
-            const wallHeight = 8; // 高度加倍 (原為 4)
-            const wallLength = 12; // 長度縮短以配合機身 (原為 16)
-            const wallPosY = 3.5; // 提高 Y 位置以保持底部對齊 (原為 1.5)
+            const wallHeight = 8;
+            // 配合機身縮短，牆壁長度從 12 改為 9
+            const wallLength = 9; 
+            const wallPosY = 3.5;
 
-            // 左側牆視覺
             const meshL = new THREE.Mesh(new THREE.BoxGeometry(1, wallHeight, wallLength), wallMat);
             meshL.position.set(-6, wallPosY, 0); 
             meshL.rotation.y = -0.15; 
             scene.add(meshL);
 
-            // 左側牆物理 (半高, 半長)
             const bodyL = new CANNON.Body({ mass: 0, material: wallPhysMat });
             bodyL.addShape(new CANNON.Box(new CANNON.Vec3(0.5, wallHeight/2, wallLength/2)));
             bodyL.position.copy(meshL.position); bodyL.quaternion.copy(meshL.quaternion); world.addBody(bodyL);
 
-            // 右側牆視覺
             const meshR = meshL.clone(); 
             meshR.position.set(6, wallPosY, 0); 
             meshR.rotation.y = 0.15; 
             scene.add(meshR);
 
-            // 右側牆物理
             const bodyR = new CANNON.Body({ mass: 0, material: wallPhysMat });
             bodyR.addShape(new CANNON.Box(new CANNON.Vec3(0.5, wallHeight/2, wallLength/2)));
             bodyR.position.copy(meshR.position); bodyR.quaternion.copy(meshR.quaternion); world.addBody(bodyR);
@@ -340,8 +330,10 @@
                 lastAutoDropTime = now;
             }
 
+            // 【推把範圍大一點】
+            // 基礎位置 -4.5 (配合短機身往後移), 擺動幅度 2.8 (加大)
             const time = now * 0.0008;
-            pusherBody.position.z = -5.0 + Math.sin(time) * 2.0;
+            pusherBody.position.z = -4.5 + Math.sin(time) * 2.8;
             pusherMesh.position.copy(pusherBody.position);
 
             for (let i = coins.length - 1; i >= 0; i--) {
