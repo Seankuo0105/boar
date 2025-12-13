@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批次圖片縮放工具</title>
+    <link rel="icon" href="https://seankuo0105.github.io/boar/pig.png" type="image/png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        /* 標題區域樣式 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .header img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        h2 { color: #333; margin: 0; }
+        
+        /* 上傳區塊樣式 */
+        .upload-area {
+            border: 2px dashed #aaa;
+            border-radius: 8px;
+            padding: 40px 20px;
+            background-color: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            background-color: #e1f5fe;
+            border-color: #0288d1;
+        }
+        .upload-area p { margin: 0; color: #666; font-size: 1.1rem; }
+        #fileInput { display: none; }
+
+        /* 設定區塊 */
+        .settings {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+        }
+        .input-group label { font-size: 0.9rem; color: #555; margin-bottom: 5px; }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 80px;
+        }
+
+        /* 按鈕與狀態 */
+        button#processBtn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button#processBtn:hover { background-color: #218838; }
+        button#processBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: #444;
+            min-height: 20px;
+        }
+        .file-list {
+            margin-top: 10px;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #777;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <img src="https://seankuo0105.github.io/boar/pig.png" alt="Icon">
+        <h2>批次圖片縮放器</h2>
+    </div>
+    
+    <div class="upload-area" id="dropZone">
+        <p>點擊此處 或 將圖片拖曳至此</p>
+        <p style="font-size: 0.8rem; color: #999; margin-top:5px;">(支援 JPG, PNG, WEBP)</p>
+        <input type="file" id="fileInput" multiple accept="image/*">
+    </div>
+
+    <div class="file-list" id="fileList">尚未選擇檔案</div>
+
+    <div class="settings">
+        <div class="input-group">
+            <label>寬度 (px)</label>
+            <input type="number" id="widthInput" placeholder="例如 800">
+        </div>
+        <div class="input-group">
+            <label>高度 (px)</label>
+            <input type="number" id="heightInput" placeholder="自動">
+        </div>
+    </div>
+    <div style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">
+        * 若只填寫一欄，另一欄將依比例自動縮放
+    </div>
+
+    <button id="processBtn">開始縮放並下載</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileListDisplay = document.getElementById('fileList');
+    const processBtn = document.getElementById('processBtn');
+    const statusDiv = document.getElementById('status');
+    
+    let selectedFiles = [];
+
+    // 1. 處理點擊上傳
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    // 2. 處理拖曳上傳
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        handleFiles(dt.files);
+    });
+
+    // 儲存並顯示檔案
+    function handleFiles(files) {
+        selectedFiles = [...files].filter(file => file.type.startsWith('image/'));
+        if (selectedFiles.length > 0) {
+            fileListDisplay.textContent = `已選擇 ${selectedFiles.length} 個檔案：${selectedFiles.map(f => f.name).join(', ')}`;
+            statusDiv.textContent = '準備就緒。';
+        } else {
+            fileListDisplay.textContent = '未選擇有效的圖片檔案';
+        }
+    }
+
+    // 3. 核心處理邏輯
+    processBtn.addEventListener('click', async () => {
+        if (selectedFiles.length === 0) {
+            alert('請先上傳圖片！');
+            return;
+        }
+
+        const targetWidth = document.getElementById('widthInput').value;
+        const targetHeight = document.getElementById('heightInput').value;
+
+        if (!targetWidth && !targetHeight) {
+            alert('請至少輸入寬度或高度其中一項！');
+            return;
+        }
+
+        processBtn.disabled = true;
+        statusDiv.textContent = '正在處理圖片...';
+
+        try {
+            const processedImages = await Promise.all(selectedFiles.map(file => resizeImage(file, targetWidth, targetHeight)));
+
+            if (processedImages.length === 1) {
+                // 單張圖片：直接下載
+                statusDiv.textContent = '處理完成，正在下載單張圖片...';
+                downloadSingleFile(processedImages[0]);
+            } else {
+                // 多張圖片：ZIP 下載
+                statusDiv.textContent = '處理完成，正在壓縮為 ZIP...';
+                await downloadAsZip(processedImages);
+            }
+            
+            statusDiv.textContent = '下載已開始！';
+        } catch (error) {
+            console.error(error);
+            statusDiv.textContent = '發生錯誤：' + error.message;
+        } finally {
+            processBtn.disabled = false;
+        }
+    });
+
+    // 縮放圖片函式 (回傳 Promise)
+    function resizeImage(file, widthStr, heightStr) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                let width = parseInt(widthStr);
+                let height = parseInt(heightStr);
+                
+                // 計算比例
+                if (width && !height) {
+                    height = img.height * (width / img.width);
+                } else if (!width && height) {
+                    width = img.width * (height / img.height);
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // 繪製並縮放
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob((blob) => {
+                    resolve({
+                        name: file.name,
+                        blob: blob
+                    });
+                    URL.revokeObjectURL(img.src); // 釋放記憶體
+                }, file.type, 0.9); // 0.9 為品質參數
+            };
+            
+            img.onerror = reject;
+        });
+    }
+
+    // 下載單一檔案
+    function downloadSingleFile(fileObj) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(fileObj.blob);
+        link.download = fileObj.name; // 保留原檔名
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+
+    // 打包成 ZIP 並下載
+    async function downloadAsZip(images) {
+        const zip = new JSZip();
+        
+        // 將圖片加入 ZIP
+        images.forEach(img => {
+            zip.file(img.name, img.blob);
+        });
+
+        // 產生 ZIP Blob
+        const content = await zip.generateAsync({type: "blob"});
+        
+        // 下載 ZIP
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = "resized_images.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+</script>
+
+</body>
+</html>
