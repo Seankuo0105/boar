@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖片偶數縮放工具</title>
+    <link rel="icon" href="https://seankuo0105.github.io/boar/pig.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header img { width: 40px; height: 40px; object-fit: contain; }
+        h2 { color: #333; margin: 0; }
+
+        /* 主容器：左右兩欄佈局 */
+        .main-container {
+            display: flex;
+            width: 90%;
+            max-width: 1000px;
+            height: 70vh; /* 固定高度讓區域明顯 */
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        /* 通用區塊樣式 */
+        .box {
+            flex: 1;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background: white;
+            border: 3px solid transparent;
+            overflow: hidden;
+        }
+
+        /* 左側：上傳區 */
+        .upload-zone {
+            border-color: #32CD32; /* 配合手繪圖的綠色 */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            background-color: #f0fff0;
+        }
+        .upload-label {
+            font-size: 1.5rem;
+            color: #32CD32;
+            font-weight: bold;
+            text-align: center;
+        }
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+        #fileInput { display: none; }
+
+        /* 右側：下載區 */
+        .download-zone {
+            border-color: #32CD32;
+            position: relative;
+        }
+        .download-header {
+            font-size: 1.5rem;
+            color: #ffa500; /* 配合手繪圖的橘色字體 */
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        /* 下載列表容器 */
+        .download-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
+        }
+
+        /* 單個下載項目 */
+        .download-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .download-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+        }
+        .item-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        .item-name {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #444;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .item-size {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .download-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+        .download-btn:hover { background-color: #0056b3; }
+        
+        /* 規則說明 */
+        .rules {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="https://seankuo0105.github.io/boar/pig.png" alt="Icon">
+        <h2>圖片偶數縮放器</h2>
+    </div>
+
+    <div class="main-container">
+        <div class="box upload-zone" id="dropZone">
+            <div class="upload-label">上傳區</div>
+            <div class="upload-hint">拖曳圖片至此 或 點擊選擇</div>
+            <input type="file" id="fileInput" multiple accept="image/*">
+        </div>
+
+        <div class="box download-zone">
+            <div class="download-header">下載區</div>
+            <div class="download-list" id="downloadList">
+                </div>
+        </div>
+    </div>
+
+    <div class="rules">
+        自動縮放範圍：寬 80~370 / 高 80~320 (強制偶數像素)
+    </div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const downloadList = document.getElementById('downloadList');
+
+    // 點擊上傳
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // 拖曳效果
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    // 檔案變更監聽
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+
+    function handleFiles(files) {
+        const imageFiles = [...files].filter(file => file.type.startsWith('image/'));
+        if (imageFiles.length === 0) return;
+
+        imageFiles.forEach(processImage);
+    }
+
+    // 核心處理邏輯
+    function processImage(file) {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+
+        img.onload = () => {
+            // 1. 設定目標最大範圍
+            const MAX_W = 370;
+            const MAX_H = 320;
+            const MIN_W = 80; // 若原圖太小，這裡邏輯以「縮小至範圍內」為主，若原圖小於80則維持原圖或放大，以下採「適應最大範圍」邏輯
+            
+            let w = img.width;
+            let h = img.height;
+
+            // 計算縮放比例 (Scale to Fit)
+            // 先計算如果要塞進 370x320 需要縮小多少
+            let scale = Math.min(MAX_W / w, MAX_H / h);
+            
+            // 如果原圖已經比限制範圍小，且大於最小範圍，通常保持原樣或放大? 
+            // 依照 "自動寬度為..." 的描述，通常是指 Output 必須在這個範圍內。
+            // 這裡採用：若原圖大於範圍則縮小，若原圖小於範圍則不放大(避免模糊)，除非您希望強制放大。
+            // 假設策略：只做「縮小」以符合最大值，若原圖本身就小，則檢查是否小於最小值。
+            
+            if (scale < 1) {
+                w = w * scale;
+                h = h * scale;
+            }
+
+            // 確保不小於最小值 (若需要強制放大的話，取消註解下面兩行)
+            // let minScale = Math.max(MIN_W / w, 80 / h);
+            // if (minScale > 1) { w *= minScale; h *= minScale; }
+
+            // 2. 強制轉為偶數 (Math.floor(x / 2) * 2)
+            // 使用 round 避免誤差，再強制轉偶數
+            let finalW = Math.round(w);
+            let finalH = Math.round(h);
+
+            if (finalW % 2 !== 0) finalW -= 1;
+            if (finalH % 2 !== 0) finalH -= 1;
+
+            // 防止意外變成 0
+            finalW = Math.max(2, finalW);
+            finalH = Math.max(2, finalH);
+
+            // 3. 繪製到 Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = finalW;
+            canvas.height = finalH;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, finalW, finalH);
+
+            // 4. 輸出並建立下載項目
+            canvas.toBlob((blob) => {
+                createDownloadItem(blob, file.name, finalW, finalH);
+                URL.revokeObjectURL(img.src);
+            }, file.type);
+        };
+    }
+
+    function createDownloadItem(blob, originalName, w, h) {
+        const url = URL.createObjectURL(blob);
+        
+        // 建立 UI 元素
+        const item = document.createElement('div');
+        item.className = 'download-item';
+        
+        item.innerHTML = `
+            <img src="${url}" alt="preview">
+            <div class="item-info">
+                <div class="item-name">${originalName}</div>
+                <div class="item-size">${w} x ${h} px</div>
+            </div>
+            <a href="${url}" download="${originalName}" class="download-btn">下載</a>
+        `;
+
+        // 加到下載區最上方
+        downloadList.insertBefore(item, downloadList.firstChild);
+    }
+</script>
+
+</body>
+</html>
