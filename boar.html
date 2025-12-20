@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下載器載點（boar分流）</title>
+    
+    <link rel="icon" href="https://seankuo0105.github.io/boar/pig4k.png">
+
+    <style>
+        /* 全域樣式設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+            height: 100vh; /* 佔滿整個視窗高度 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 垂直置中 */
+            align-items: center; /* 水平置中 */
+            
+            /* 背景設定 */
+            background-image: url('https://seankuo0105.github.io/boar/pig4k.png');
+            background-size: cover; /* 背景填滿 */
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            /* 讓文字在圖片上清楚一點，可以加個簡單的陰影 (可選) */
+            /* text-shadow: 1px 1px 2px white; */
+        }
+
+        /* 標題樣式 */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 50px; /* 與按鈕的距離 */
+            color: black;
+            font-weight: bold;
+        }
+
+        /* 彩色變換按鈕樣式 */
+        .download-btn {
+            text-decoration: none; /* 去除底線 */
+            font-size: 4rem; /* 字體大小 */
+            font-weight: bold;
+            padding: 20px 60px;
+            background-color: rgba(255, 255, 255, 0.4); /* 半透明背景，讓字更清楚 */
+            border: 8px solid; /* 邊框厚度 */
+            cursor: pointer;
+            transition: transform 0.2s; /* 點擊縮放效果 */
+            
+            /* 套用彩色動畫：名稱 持續時間 線性 無限循環 */
+            animation: rainbow-color 3s linear infinite; 
+        }
+
+        /* 按鈕懸停效果 */
+        .download-btn:hover {
+            transform: scale(1.1); /* 滑鼠移過去稍微放大 */
+        }
+
+        /* 定義彩色變換動畫 (RGB效果) */
+        @keyframes rainbow-color {
+            0%   { color: #ff0000; border-color: #ff0000; } /* 紅 */
+            15%  { color: #ff7f00; border-color: #ff7f00; } /* 橙 */
+            30%  { color: #ffff00; border-color: #ffff00; } /* 黃 */
+            45%  { color: #00ff00; border-color: #00ff00; } /* 綠 */
+            60%  { color: #0000ff; border-color: #0000ff; } /* 藍 */
+            75%  { color: #4b0082; border-color: #4b0082; } /* 靛 */
+            90%  { color: #9400d3; border-color: #9400d3; } /* 紫 */
+            100% { color: #ff0000; border-color: #ff0000; } /* 回到紅 */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>下載器載點（boar分流）</h1>
+
+    <a href="https://seankuo0105.github.io/boar/boar分流.bat" class="download-btn">
+        下載
+    </a>
+
+</body>
+</html>
