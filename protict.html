@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>配對練習</title>
+    <link rel="icon" href="https://seankuo0105.github.io/boar/pig.png">
+    <style>
+        :root {
+            --border-thick: 3px solid black;
+            --box-red: #ff0000;
+            --box-white: #ffffff;
+            --btn-green: #00b050;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f9f9f9;
+            /* 防止手機上下拉動刷新 */
+            overscroll-behavior: none; 
+        }
+
+        h1 { margin-bottom: 20px; }
+
+        button {
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: var(--border-thick);
+            background: white;
+            padding: 5px 15px;
+        }
+        button:active { transform: translateY(2px); }
+
+        .mode-switch {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #eee;
+        }
+
+        /* --- 編輯區塊 --- */
+        #editor-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-wrapper label {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .input-box {
+            width: 120px;
+            height: 40px;
+            border: var(--border-thick);
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 5px;
+        }
+
+        #add-btn {
+            height: 54px;
+            width: 80px;
+            margin-top: 38px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--btn-green);
+        }
+
+        #add-btn span {
+             background: var(--btn-green);
+             color: white;
+             border-radius: 4px;
+             padding: 0 5px;
+             font-size: 1.2rem;
+        }
+
+        .word-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: var(--border-thick);
+            padding: 5px 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            background: white;
+        }
+
+        .list-text { display: flex; gap: 10px; }
+        .delete-btn { color: red; background: none; border: none; font-size: 1.5rem; font-weight: bold; cursor: pointer; }
+        .hint-text { color: #ffd700; font-weight: bold; align-self: flex-end; margin-top: 5px; text-shadow: 1px 1px 0 #000; }
+
+        /* --- 遊戲區塊 --- */
+        #game-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .game-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 50px;
+            margin-bottom: 50px;
+            width: 100%;
+        }
+
+        /* 拖曳物件樣式 */
+        .draggable {
+            background-color: var(--box-red);
+            border: var(--border-thick);
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: grab;
+            user-select: none;
+            min-width: 100px;
+            text-align: center;
+            touch-action: none; /* 關鍵：禁止瀏覽器預設的捲動行為 */
+        }
+        
+        /* 手機拖曳時的浮動樣式 */
+        .draggable.touch-dragging {
+            position: fixed;
+            z-index: 1000;
+            opacity: 0.8;
+            transform: scale(1.1);
+            pointer-events: none; /* 讓手指能穿透它偵測下方的 drop-zone */
+        }
+        
+        /* 佔位符：當元素被拖走時留在原地的隱形盒子，防止版面跳動 */
+        .placeholder {
+            visibility: hidden;
+            background: #ccc;
+            border: 2px dashed #999;
+        }
+
+        .drop-zone-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .drop-zone {
+            background-color: var(--box-white);
+            border: var(--border-thick);
+            min-width: 150px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .drop-zone.occupied .draggable {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box; /* 確保邊框計算在內 */
+        }
+
+        .check-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .instruction-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 1px 1px 0 #ccc; 
+        }
+
+        #check-btn {
+            border: var(--border-thick);
+            background: white;
+            color: #00ff00;
+            font-size: 2rem;
+            padding: 5px 20px;
+        }
+
+        .correct { border-color: #00ff00 !important; box-shadow: 0 0 10px #00ff00; }
+        .wrong { border-color: red !important; box-shadow: 0 0 10px red; }
+
+        #share-section {
+            margin-top: 30px;
+            padding: 10px;
+            border: 1px dashed #aaa;
+            text-align: center;
+            word-break: break-all;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <button class="mode-switch" onclick="toggleMode('editor')">編輯題目</button>
+        <button class="mode-switch" onclick="toggleMode('game')">開始遊戲</button>
+    </div>
+
+    <div id="editor-section">
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>英文</label>
+                <input type="text" id="inputEn" class="input-box">
+            </div>
+            <div class="input-wrapper">
+                <label>意思</label>
+                <input type="text" id="inputZh" class="input-box">
+            </div>
+            <div class="input-wrapper">
+                <label>確定</label>
+                <button id="add-btn" onclick="addItem()"><span>✔</span></button>
+            </div>
+        </div>
+        <div class="input-group" style="width: 100%; justify-content: flex-start;">
+             <span style="color: #ffd700; font-weight: bold;">輸入框</span>
+             <span style="color: #ffd700; font-weight: bold; margin-left: auto; margin-right: 30px;">按鈕</span>
+        </div>
+        <div id="word-list" class="word-list"></div>
+        <div class="hint-text">已輸入會在下面</div>
+        <div id="share-section">
+            <p>複製下方連結分享題目：</p>
+            <input type="text" id="share-link" readonly style="width: 100%;">
+            <button onclick="copyLink()">複製</button>
+        </div>
+    </div>
+
+    <div id="game-section">
+        <div class="game-area">
+            <div id="draggables-container" style="display:flex; flex-direction:column; gap:20px;"></div>
+            <div id="drop-zones-container" class="drop-zone-container"></div>
+        </div>
+        <div class="check-area">
+            <div class="instruction-text">拖到正確意思</div>
+            <button id="check-btn" onclick="checkAnswer()">檢查答案</button>
+        </div>
+    </div>
+
+    <script>
+        let pairs = [];
+        let touchDragItem = null;
+        let touchStartPos = { x: 0, y: 0 };
+        let initialParent = null;
+        let placeholder = null;
+
+        window.onload = function() {
+            loadFromUrl();
+            renderList();
+            if (pairs.length > 0) toggleMode('game');
+            else toggleMode('editor');
+        };
+
+        function addItem() {
+            const enInput = document.getElementById('inputEn');
+            const zhInput = document.getElementById('inputZh');
+            if (enInput.value.trim() && zhInput.value.trim()) {
+                pairs.push({ id: Date.now(), en: enInput.value.trim(), zh: zhInput.value.trim() });
+                enInput.value = ''; zhInput.value = '';
+                renderList(); updateUrl();
+            }
+        }
+        function deleteItem(id) { pairs = pairs.filter(i => i.id !== id); renderList(); updateUrl(); }
+        function renderList() {
+            const list = document.getElementById('word-list');
+            list.innerHTML = '';
+            pairs.forEach(item => {
+                list.innerHTML += `
+                    <div class="list-item">
+                        <div class="list-text"><span>${item.en}</span><span>${item.zh}</span></div>
+                        <button class="delete-btn" onclick="deleteItem(${item.id})">❌刪除</button>
+                    </div>`;
+            });
+        }
+        function updateUrl() {
+            const encoded = btoa(encodeURIComponent(JSON.stringify(pairs)));
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?data=' + encoded;
+            window.history.pushState({path:newUrl},'',newUrl);
+            document.getElementById('share-section').style.display = 'block';
+            document.getElementById('share-link').value = newUrl;
+        }
+        function loadFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('data')) {
+                try { pairs = JSON.parse(decodeURIComponent(atob(params.get('data')))); } catch(e){}
+            }
+        }
+        function copyLink() {
+            document.getElementById("share-link").select();
+            document.execCommand("copy");
+            alert("連結已複製！");
+        }
+
+        function toggleMode(mode) {
+            document.getElementById('editor-section').style.display = mode === 'editor' ? 'flex' : 'none';
+            document.getElementById('game-section').style.display = mode === 'game' ? 'flex' : 'none';
+            if (mode === 'game') initGame();
+        }
+
+        function initGame() {
+            const dragContainer = document.getElementById('draggables-container');
+            const dropContainer = document.getElementById('drop-zones-container');
+            dragContainer.innerHTML = '';
+            dropContainer.innerHTML = '';
+
+            let shuffled = [...pairs].sort(() => Math.random() - 0.5);
+            let originals = [...pairs].sort(() => Math.random() - 0.5); // 右側也隨機排列
+
+            originals.forEach(item => {
+                const zone = document.createElement('div');
+                zone.className = 'drop-zone';
+                zone.innerText = item.zh;
+                zone.dataset.matchId = item.id;
+                
+                // 電腦版拖放
+                zone.addEventListener('dragover', e => { e.preventDefault(); });
+                zone.addEventListener('drop', handleDesktopDrop);
+                
+                // 點擊事件：如果裡面有方塊，點擊後彈回原處
+                zone.addEventListener('click', () => {
+                   if(zone.children.length > 0) {
+                       const child = zone.children[0];
+                       if(child.classList.contains('draggable')) {
+                           document.getElementById('draggables-container').appendChild(child);
+                           zone.classList.remove('occupied');
+                       }
+                   } 
+                });
+                dropContainer.appendChild(zone);
+            });
+
+            shuffled.forEach(item => {
+                const dragItem = document.createElement('div');
+                dragItem.className = 'draggable';
+                dragItem.draggable = true;
+                dragItem.innerText = item.en;
+                dragItem.dataset.id = item.id;
+
+                // 電腦版事件
+                dragItem.addEventListener('dragstart', handleDragStart);
+                
+                // 手機/iPad 觸控事件
+                dragItem.addEventListener('touchstart', handleTouchStart, {passive: false});
+                dragItem.addEventListener('touchmove', handleTouchMove, {passive: false});
+                dragItem.addEventListener('touchend', handleTouchEnd);
+
+                dragContainer.appendChild(dragItem);
+            });
+        }
+
+        // --- 電腦版 Drag & Drop ---
+        let desktopDraggedItem = null;
+        function handleDragStart(e) { desktopDraggedItem = this; e.dataTransfer.effectAllowed = 'move'; }
+        function handleDesktopDrop(e) {
+            e.preventDefault();
+            if (this.classList.contains('occupied') && this.children.length > 0) return;
+            if (desktopDraggedItem) {
+                this.appendChild(desktopDraggedItem);
+                this.classList.add('occupied');
+                desktopDraggedItem = null;
+            }
+        }
+
+        // --- 手機版 Touch Drag ---
+        function handleTouchStart(e) {
+            e.preventDefault(); // 防止滾動
+            const touch = e.touches[0];
+            touchDragItem = this;
+            initialParent = this.parentNode;
+
+            // 建立佔位符，防止列表塌陷
+            placeholder = document.createElement('div');
+            placeholder.className = 'draggable placeholder';
+            placeholder.style.width = this.offsetWidth + 'px';
+            placeholder.style.height = this.offsetHeight + 'px';
+            this.parentNode.insertBefore(placeholder, this);
+
+            // 計算手指相對於元素的偏移量，讓拖曳更自然
+            const rect = this.getBoundingClientRect();
+            touchStartPos.x = touch.clientX - rect.left;
+            touchStartPos.y = touch.clientY - rect.top;
+
+            // 設定浮動樣式
+            this.classList.add('touch-dragging');
+            this.style.width = rect.width + 'px'; // 固定寬度避免變形
+            this.style.left = (touch.clientX - touchStartPos.x) + 'px';
+            this.style.top = (touch.clientY - touchStartPos.y) + 'px';
+        }
+
+        function handleTouchMove(e) {
+            if (!touchDragItem) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchDragItem.style.left = (touch.clientX - touchStartPos.x) + 'px';
+            touchDragItem.style.top = (touch.clientY - touchStartPos.y) + 'px';
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchDragItem) return;
+            const touch = e.changedTouches[0];
+            
+            // 暫時隱藏拖曳物，以便偵測下方元素
+            touchDragItem.style.display = 'none';
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchDragItem.style.display = ''; // 恢復顯示
+
+            // 尋找最近的 drop-zone
+            const dropZone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+
+            // 清除拖曳樣式
+            touchDragItem.classList.remove('touch-dragging');
+            touchDragItem.style.left = '';
+            touchDragItem.style.top = '';
+            touchDragItem.style.width = '';
+            touchDragItem.style.position = '';
+
+            // 判斷是否放置成功
+            if (dropZone && !dropZone.classList.contains('occupied')) {
+                dropZone.appendChild(touchDragItem);
+                dropZone.classList.add('occupied');
+            } else {
+                // 放回原處 (如果是從 dropzone 拉出來的，就回到列表區)
+                // 如果原處就是列表區，就回到 placeholder 位置
+                if (initialParent.classList.contains('drop-zone')) {
+                    // 從答案區拉出來沒放好 -> 回到左側列表
+                     document.getElementById('draggables-container').appendChild(touchDragItem);
+                     initialParent.classList.remove('occupied');
+                } else {
+                    initialParent.insertBefore(touchDragItem, placeholder);
+                }
+            }
+
+            // 清除佔位符
+            if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.removeChild(placeholder);
+            }
+            
+            touchDragItem = null;
+            placeholder = null;
+        }
+
+        function checkAnswer() {
+            const zones = document.querySelectorAll('.drop-zone');
+            let allCorrect = true;
+            let hasItem = false;
+
+            zones.forEach(zone => {
+                zone.classList.remove('correct', 'wrong');
+                if (zone.children.length > 0) {
+                    hasItem = true;
+                    if (zone.children[0].dataset.id == zone.dataset.matchId) zone.classList.add('correct');
+                    else { zone.classList.add('wrong'); allCorrect = false; }
+                } else allCorrect = false;
+            });
+
+            if (allCorrect && hasItem) alert("恭喜！全部答對！");
+        }
+    </script>
+</body>
+</html>
