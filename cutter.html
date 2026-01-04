@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>圖片批次四分割工具 (ZIP輸出)</title>
+    <link rel="icon" type="image/png" href="https://seankuo0105.github.io/boar/pig.png">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body {
@@ -24,6 +26,15 @@
             max-width: 600px;
             width: 100%;
             text-align: center;
+        }
+
+        /* Logo 樣式 */
+        .app-logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 15px;
+            border-radius: 50%; /* 如果想要圓形可以保留這行，不想圓形可刪除 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         h1 { margin-top: 0; color: #2c3e50; }
@@ -129,6 +140,8 @@
 <body>
 
 <div class="container">
+    <img src="https://seankuo0105.github.io/boar/pig.png" alt="Logo" class="app-logo">
+    
     <h1>批次圖片切割器 (ZIP)</h1>
     <p>一次上傳多張圖片，自動切成四份並打包下載</p>
 
@@ -165,7 +178,6 @@
 
     let selectedFiles = [];
 
-    // 當使用者選擇檔案時
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             selectedFiles = Array.from(e.target.files);
@@ -174,11 +186,9 @@
             processBtn.textContent = '開始處理並下載 ZIP';
             processBtn.disabled = false;
             
-            // 重置進度條
             statusBox.style.display = 'none';
             progressBar.style.width = '0%';
             
-            // 顯示檔案清單預覽
             previewInfo.style.display = 'block';
             previewInfo.innerHTML = `<strong>準備處理：</strong><br>${selectedFiles.map(f => f.name).join(', ')}`;
         }
@@ -187,29 +197,27 @@
     processBtn.addEventListener('click', async () => {
         if (selectedFiles.length === 0) return;
 
-        // 初始化介面
         processBtn.disabled = true;
         processBtn.textContent = '處理中...';
         statusBox.style.display = 'block';
-        const zip = new JSZip(); // 建立 ZIP 物件
+        const zip = new JSZip(); 
         
         let processedCount = 0;
         const totalFiles = selectedFiles.length;
 
-        // 定義切割邏輯的 Promise 函式
         const processImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
+                    img.crossOrigin = "Anonymous"; // 避免跨域問題(雖然本機讀取通常不需要)
                     img.onload = () => {
                         const width = img.width;
                         const height = img.height;
                         const halfW = Math.floor(width / 2);
                         const halfH = Math.floor(height / 2);
-                        const baseName = file.name.replace(/\.[^/.]+$/, ""); // 去除副檔名
+                        const baseName = file.name.replace(/\.[^/.]+$/, ""); 
 
-                        // 定義四個區塊
                         const parts = [
                             { name: '_01_top_left', x: 0, y: 0 },
                             { name: '_02_top_right', x: 1, y: 0 },
@@ -231,11 +239,9 @@
                                 halfW, halfH
                             );
 
-                            // 轉成 Base64 字串 (移除 data:image/png;base64, 前綴以放入 zip)
                             const dataUrl = canvas.toDataURL('image/png');
                             const base64Data = dataUrl.split(',')[1];
 
-                            // 加入 ZIP
                             zip.file(`${baseName}${part.name}.png`, base64Data, {base64: true});
                         });
 
@@ -249,17 +255,13 @@
             });
         };
 
-        // 依序執行所有圖片處理
-        // 使用 Promise.all 同時處理 (若圖片極多可能需要改為循序處理以防記憶體爆量，但一般使用 Promise.all 較快)
         try {
             await Promise.all(selectedFiles.map(file => processImage(file)));
 
             statusMsg.textContent = "正在打包壓縮...";
             
-            // 產生 ZIP 檔
             const content = await zip.generateAsync({type: "blob"});
             
-            // 下載 ZIP
             const link = document.createElement('a');
             link.href = URL.createObjectURL(content);
             link.download = "cut_images_batch.zip";
@@ -272,6 +274,7 @@
         } catch (error) {
             console.error(error);
             statusMsg.textContent = "發生錯誤，請檢查圖片格式";
+            processBtn.disabled = false;
         }
     });
 
