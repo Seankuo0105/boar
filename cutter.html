@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖片批次四分割工具 (ZIP輸出)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 { margin-top: 0; color: #2c3e50; }
+        p { color: #666; margin-bottom: 30px; }
+
+        /* 上傳區塊樣式 */
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            padding: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .btn-action {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: none; /* 預設隱藏 */
+        }
+
+        .btn-action:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-action:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* 進度條與狀態 */
+        .status-box {
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #10b981;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .log-text {
+            font-size: 14px;
+            color: #555;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .file-list-preview {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            max-height: 100px;
+            overflow-y: auto;
+            text-align: left;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>批次圖片切割器 (ZIP)</h1>
+    <p>一次上傳多張圖片，自動切成四份並打包下載</p>
+
+    <div class="upload-area">
+        <span class="upload-icon">📂</span>
+        <span id="upload-text">點擊或拖這多張圖片到這裡</span>
+        <input type="file" id="file-input" accept="image/*" multiple>
+    </div>
+
+    <div id="preview-info" class="file-list-preview" style="display:none;"></div>
+
+    <div class="status-box" id="status-box">
+        <div class="log-text">
+            <span id="status-msg">準備中...</span>
+            <span id="percentage">0%</span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <button id="process-btn" class="btn-action">開始處理並下載 ZIP</button>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const processBtn = document.getElementById('process-btn');
+    const statusBox = document.getElementById('status-box');
+    const statusMsg = document.getElementById('status-msg');
+    const percentageText = document.getElementById('percentage');
+    const progressBar = document.getElementById('progress-bar');
+    const uploadText = document.getElementById('upload-text');
+    const previewInfo = document.getElementById('preview-info');
+
+    let selectedFiles = [];
+
+    // 當使用者選擇檔案時
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            selectedFiles = Array.from(e.target.files);
+            uploadText.textContent = `已選擇 ${selectedFiles.length} 個檔案`;
+            processBtn.style.display = 'inline-block';
+            processBtn.textContent = '開始處理並下載 ZIP';
+            processBtn.disabled = false;
+            
+            // 重置進度條
+            statusBox.style.display = 'none';
+            progressBar.style.width = '0%';
+            
+            // 顯示檔案清單預覽
+            previewInfo.style.display = 'block';
+            previewInfo.innerHTML = `<strong>準備處理：</strong><br>${selectedFiles.map(f => f.name).join(', ')}`;
+        }
+    });
+
+    processBtn.addEventListener('click', async () => {
+        if (selectedFiles.length === 0) return;
+
+        // 初始化介面
+        processBtn.disabled = true;
+        processBtn.textContent = '處理中...';
+        statusBox.style.display = 'block';
+        const zip = new JSZip(); // 建立 ZIP 物件
+        
+        let processedCount = 0;
+        const totalFiles = selectedFiles.length;
+
+        // 定義切割邏輯的 Promise 函式
+        const processImage = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const width = img.width;
+                        const height = img.height;
+                        const halfW = Math.floor(width / 2);
+                        const halfH = Math.floor(height / 2);
+                        const baseName = file.name.replace(/\.[^/.]+$/, ""); // 去除副檔名
+
+                        // 定義四個區塊
+                        const parts = [
+                            { name: '_01_top_left', x: 0, y: 0 },
+                            { name: '_02_top_right', x: 1, y: 0 },
+                            { name: '_03_bottom_left', x: 0, y: 1 },
+                            { name: '_04_bottom_right', x: 1, y: 1 }
+                        ];
+
+                        parts.forEach(part => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = halfW;
+                            canvas.height = halfH;
+                            const ctx = canvas.getContext('2d');
+                            
+                            ctx.drawImage(
+                                img, 
+                                part.x * halfW, part.y * halfH, 
+                                halfW, halfH, 
+                                0, 0, 
+                                halfW, halfH
+                            );
+
+                            // 轉成 Base64 字串 (移除 data:image/png;base64, 前綴以放入 zip)
+                            const dataUrl = canvas.toDataURL('image/png');
+                            const base64Data = dataUrl.split(',')[1];
+
+                            // 加入 ZIP
+                            zip.file(`${baseName}${part.name}.png`, base64Data, {base64: true});
+                        });
+
+                        processedCount++;
+                        updateProgress(processedCount, totalFiles);
+                        resolve();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        // 依序執行所有圖片處理
+        // 使用 Promise.all 同時處理 (若圖片極多可能需要改為循序處理以防記憶體爆量，但一般使用 Promise.all 較快)
+        try {
+            await Promise.all(selectedFiles.map(file => processImage(file)));
+
+            statusMsg.textContent = "正在打包壓縮...";
+            
+            // 產生 ZIP 檔
+            const content = await zip.generateAsync({type: "blob"});
+            
+            // 下載 ZIP
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = "cut_images_batch.zip";
+            link.click();
+
+            statusMsg.textContent = "下載完成！";
+            processBtn.textContent = "完成";
+            processBtn.disabled = false;
+
+        } catch (error) {
+            console.error(error);
+            statusMsg.textContent = "發生錯誤，請檢查圖片格式";
+        }
+    });
+
+    function updateProgress(current, total) {
+        const percent = Math.round((current / total) * 100);
+        progressBar.style.width = `${percent}%`;
+        percentageText.textContent = `${percent}%`;
+        statusMsg.textContent = `正在處理: ${current} / ${total}`;
+    }
+</script>
+
+</body>
+</html>
