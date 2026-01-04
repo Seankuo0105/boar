@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>檔案批次編號打包器</title>
+    <link rel="icon" href="https://seankuo0105.github.io/boar/pig.png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Microsoft JhengHei, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .icon-preview {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            border-radius: 50%;
+            border: 3px solid var(--primary-color);
+            padding: 5px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        p.desc {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: background 0.3s;
+            display: none; /* 預設隱藏，有檔案才顯示 */
+        }
+
+        .btn:hover {
+            background-color: #357abd;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .arrow {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="https://seankuo0105.github.io/boar/pig.png" alt="Icon" class="icon-preview">
+        <h1>批次編號打包器</h1>
+        <p class="desc">上傳任意檔案，自動重新命名為 01, 02... 並下載 ZIP</p>
+
+        <div class="upload-area">
+            <input type="file" id="fileInput" multiple>
+            <div id="uploadText">
+                📂 點擊或拖曳檔案至此<br>
+                <span style="font-size: 0.8rem; color: #999;">(支援多選)</span>
+            </div>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+        <div class="status" id="statusText"></div>
+        <button class="btn" id="downloadBtn">下載 ZIP 檔案</button>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileListDisplay = document.getElementById('fileList');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const uploadText = document.getElementById('uploadText');
+        const statusText = document.getElementById('statusText');
+
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            
+            if (selectedFiles.length > 0) {
+                renderPreview();
+                downloadBtn.style.display = 'block';
+                uploadText.innerHTML = `已選擇 ${selectedFiles.length} 個檔案`;
+                statusText.textContent = '';
+            } else {
+                resetUI();
+            }
+        });
+
+        function resetUI() {
+            fileListDisplay.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            uploadText.innerHTML = '📂 點擊或拖曳檔案至此<br><span style="font-size: 0.8rem; color: #999;">(支援多選)</span>';
+            statusText.textContent = '';
+        }
+
+        function renderPreview() {
+            fileListDisplay.innerHTML = '';
+            fileListDisplay.style.display = 'block';
+
+            // 判斷位數，如果超過100個檔案，使用001，否則使用01
+            const padding = selectedFiles.length >= 100 ? 3 : 2;
+
+            selectedFiles.forEach((file, index) => {
+                const ext = file.name.split('.').pop(); // 取得副檔名
+                // 產生新檔名: 01.png, 02.jpg 等
+                const newName = String(index + 1).padStart(padding, '0') + '.' + ext;
+
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span style="color:#666; width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
+                    <span class="arrow">→</span>
+                    <span style="color:#333; font-weight:bold; width:45%;">${newName}</span>
+                `;
+                fileListDisplay.appendChild(item);
+            });
+        }
+
+        downloadBtn.addEventListener('click', function() {
+            if (selectedFiles.length === 0) return;
+
+            statusText.textContent = '正在壓縮中，請稍候...';
+            downloadBtn.disabled = true;
+
+            const zip = new JSZip();
+            const padding = selectedFiles.length >= 100 ? 3 : 2;
+
+            // 將檔案加入 ZIP
+            selectedFiles.forEach((file, index) => {
+                const ext = file.name.split('.').pop();
+                const newName = String(index + 1).padStart(padding, '0') + '.' + ext;
+                zip.file(newName, file);
+            });
+
+            // 產生並下載
+            zip.generateAsync({type: "blob"})
+                .then(function(content) {
+                    // 建立下載連結
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = "Renamed_Files.zip"; // 預設下載檔名
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    statusText.textContent = '下載完成！';
+                    downloadBtn.disabled = false;
+                    
+                    // 3秒後重置狀態
+                    setTimeout(() => {
+                        statusText.textContent = '';
+                    }, 3000);
+                });
+        });
+    </script>
+</body>
+</html>
