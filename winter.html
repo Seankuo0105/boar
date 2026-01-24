@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山豬單字大亂鬥 🐗</title>
+    <style>
+        :root {
+            --primary: #5D4037;
+            --secondary: #8D6E63;
+            --accent: #FF7043;
+            --bg: #EFEBE9;
+            --text: #3E2723;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .refresh-btn {
+            background-color: var(--accent);
+        }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .column-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .draggable {
+            background-color: white;
+            border: 2px solid var(--primary);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            text-align: center;
+            font-weight: bold;
+            position: relative;
+            touch-action: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .draggable.matched {
+            background-color: #C8E6C9;
+            border-color: #2E7D32;
+            color: #1B5E20;
+            cursor: default;
+        }
+
+        .drop-zone {
+            background-color: #D7CCC8;
+            border: 2px dashed var(--secondary);
+            min-height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .drop-zone.hover {
+            background-color: #FFCCBC;
+            border-style: solid;
+        }
+
+        .meaning-text {
+            flex: 1;
+            margin-right: 10px;
+            font-size: 0.95rem;
+        }
+
+        .placeholder {
+            width: 120px;
+            height: 35px;
+            background-color: rgba(255,255,255,0.5);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        #page-indicator {
+            font-weight: bold;
+            color: var(--primary);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🐗 山豬單字大亂鬥 🐗</h1>
+    
+    <div class="controls">
+        <button id="prevBtn" onclick="changePage(-1)">上一頁</button>
+        <span id="page-indicator">第 1 頁</span>
+        <button id="nextBtn" onclick="changePage(1)">下一頁</button>
+        <button class="refresh-btn" onclick="initGame()">🔄 全部重洗</button>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="target-list">
+            <div class="column-title">把英文拖到這裡 🐗</div>
+        </div>
+
+        <div class="column" id="source-list">
+            <div class="column-title">英文單字庫</div>
+        </div>
+    </div>
+
+<script>
+    // 🐗 完整單字庫 (共 89 個) 🐗
+    const rawData = [
+        // Page 1
+        { en: "trainee", ch: "實習生" }, { en: "enthusiastic", ch: "熱情的" }, { en: "introduce", ch: "介紹" },
+        { en: "cultural", ch: "文化的" }, { en: "impressed", ch: "印象深刻的" }, { en: "migrant", ch: "移居的" },
+        { en: "worker", ch: "工人" }, { en: "labor", ch: "勞動" }, { en: "nursing home", ch: "安養院" },
+        { en: "treat", ch: "對待/請客" }, { en: "abroad", ch: "在國外" }, { en: "celebrate", ch: "慶祝" },
+        { en: "create", ch: "創造" }, { en: "issue", ch: "發行/議題" }, { en: "hero", ch: "英雄" },
+        { en: "happiness", ch: "幸福" }, { en: "reduce", ch: "減少" }, { en: "infection", ch: "感染" },
+        { en: "germ", ch: "細菌" }, { en: "rinse", ch: "沖洗" }, { en: "correctly", ch: "正確地" },
+        { en: "plastic", ch: "塑膠" }, { en: "fragile", ch: "易碎的" }, { en: "environmental", ch: "環境的" },
+        { en: "ban", ch: "禁止" }, { en: "habit", ch: "習慣" }, { en: "opossum", ch: "負鼠" },
+        { en: "climb", ch: "攀爬" }, { en: "pretend", ch: "假裝" }, { en: "pouch", ch: "育兒袋" },
+        // Page 2
+        { en: "festival", ch: "節日" }, { en: "greasy", ch: "油膩的" }, { en: "throw", ch: "丟/投擲" },
+        { en: "parade", ch: "遊行" }, { en: "smash", ch: "粉碎/猛撞" }, { en: "difference", ch: "差異" },
+        { en: "uniform", ch: "制服" }, { en: "homestay", ch: "寄宿家庭" }, { en: "karaoke", ch: "卡拉OK" },
+        { en: "surely", ch: "想必/肯定" }, { en: "pop-up", ch: "快閃的" }, { en: "interact", ch: "互動" },
+        { en: "touch", ch: "觸摸" }, { en: "temporary", ch: "暫時的" }, { en: "popular", ch: "受歡迎的" },
+        { en: "field trip", ch: "校外教學" }, { en: "exhibit", ch: "展覽" }, { en: "permanent", ch: "永久的" },
+        { en: "fossil", ch: "化石" }, { en: "experience", ch: "經驗" }, { en: "hike", ch: "健行" },
+        { en: "trail", ch: "步道" }, { en: "energy", ch: "能源/精力" }, { en: "wild", ch: "野生的" },
+        { en: "trip over", ch: "絆倒" }, { en: "camping", ch: "露營" }, { en: "tent", ch: "帳篷" },
+        { en: "cooler", ch: "冰桶" }, { en: "forecast", ch: "預報" }, { en: "beforehand", ch: "事先" },
+        // Page 3
+        { en: "shelter", ch: "避難所" }, { en: "steady", ch: "穩固的" }, { en: "shaking", ch: "搖晃" },
+        { en: "utility pole", ch: "電線桿" }, { en: "emergency kit", ch: "急救包" }, { en: "unexpected", ch: "出乎意料的" },
+        { en: "seriously", ch: "認真地" }, { en: "flashlight", ch: "手電筒" }, { en: "whistle", ch: "哨子" },
+        { en: "bushfire", ch: "叢林大火" }, { en: "spread", ch: "蔓延" }, { en: "condition", ch: "狀況" },
+        { en: "disappear", ch: "消失" }, { en: "affect", ch: "影響" }, { en: "tester", ch: "測試員" },
+        { en: "requirement", ch: "要求" }, { en: "sample", ch: "樣本" }, { en: "quality", ch: "品質" },
+        { en: "patience", ch: "耐心" }, { en: "stereotype", ch: "刻板印象" }, { en: "actually", ch: "事實上" },
+        { en: "favorite", ch: "最喜愛的" }, { en: "upload", ch: "上傳" }, { en: "subscriber", ch: "訂閱者" },
+        { en: "interest", ch: "興趣" }, { en: "dream", ch: "夢想" }, { en: "excellent", ch: "優秀的" },
+        { en: "chance", ch: "機會" }, { en: "proud", ch: "驕傲的" }
+    ];
+
+    const ITEMS_PER_PAGE = 10;
+    let pagesData = [];
+    let currentPage = 0;
+    let draggedItem = null;
+    let touchClone = null;
+
+    // 洗牌演算法 (Fisher-Yates)
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // 初始化遊戲：洗牌並分頁
+    function initGame() {
+        const shuffled = shuffle([...rawData]); // 複製一份再洗牌，不影響原始資料
+        pagesData = [];
+        
+        for (let i = 0; i < shuffled.length; i += ITEMS_PER_PAGE) {
+            pagesData.push(shuffled.slice(i, i + ITEMS_PER_PAGE));
+        }
+
+        currentPage = 0;
+        renderPage();
+    }
+
+    function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < pagesData.length) {
+            currentPage = newPage;
+            renderPage();
+        }
+    }
+
+    function renderPage() {
+        // 更新按鈕與頁碼
+        document.getElementById('prevBtn').disabled = (currentPage === 0);
+        document.getElementById('nextBtn').disabled = (currentPage === pagesData.length - 1);
+        document.getElementById('page-indicator').textContent = `第 ${currentPage + 1} / ${pagesData.length} 頁`;
+
+        const targetList = document.getElementById('target-list');
+        const sourceList = document.getElementById('source-list');
+        
+        targetList.innerHTML = '<div class="column-title">把英文拖到這裡 🐗</div>';
+        sourceList.innerHTML = '<div class="column-title">英文單字庫</div>';
+
+        const currentData = pagesData[currentPage];
+
+        // 1. 建立目標區 (左邊)
+        currentData.forEach(item => {
+            const dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.dataset.answer = item.en;
+            
+            dropZone.innerHTML = `
+                <span class="meaning-text">🐗 ${item.ch}</span>
+                <div class="placeholder">拖曳至此</div>
+            `;
+            targetList.appendChild(dropZone);
+        });
+
+        // 2. 建立來源區 (右邊) - 再次打亂單字順序，避免直接對應
+        const shuffledWords = shuffle([...currentData]);
+        
+        shuffledWords.forEach(item => {
+            const dragItem = document.createElement('div');
+            dragItem.className = 'draggable';
+            dragItem.textContent = item.en;
+            dragItem.draggable = true;
+            
+            addDragEvents(dragItem);
+            sourceList.appendChild(dragItem);
+        });
+
+        // 綁定放置區事件
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            addDropEvents(zone);
+        });
+    }
+
+    // --- 拖曳邏輯 (滑鼠) ---
+    function addDragEvents(el) {
+        el.addEventListener('dragstart', function(e) {
+            draggedItem = this;
+            e.dataTransfer.effectAllowed = 'move';
+            this.style.opacity = '0.4';
+        });
+
+        el.addEventListener('dragend', function() {
+            this.style.opacity = '1';
+            draggedItem = null;
+        });
+
+        // 手機觸控支援
+        el.addEventListener('touchstart', handleTouchStart, {passive: false});
+        el.addEventListener('touchmove', handleTouchMove, {passive: false});
+        el.addEventListener('touchend', handleTouchEnd);
+    }
+
+    function addDropEvents(zone) {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (!this.querySelector('.draggable')) {
+                this.classList.add('hover');
+            }
+        });
+
+        zone.addEventListener('dragleave', function() {
+            this.classList.remove('hover');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('hover');
+            if (draggedItem) {
+                checkMatch(this, draggedItem);
+            }
+        });
+    }
+
+    // --- 觸控邏輯 (手機版修復) ---
+    function handleTouchStart(e) {
+        e.preventDefault();
+        draggedItem = this;
+        
+        touchClone = this.cloneNode(true);
+        touchClone.style.position = 'fixed';
+        touchClone.style.zIndex = '9999';
+        touchClone.style.pointerEvents = 'none';
+        touchClone.style.opacity = '0.8';
+        touchClone.style.width = this.offsetWidth + 'px';
+        document.body.appendChild(touchClone);
+
+        const touch = e.touches[0];
+        moveClone(touch.clientX, touch.clientY);
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        moveClone(touch.clientX, touch.clientY);
+
+        const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dropZone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+
+        document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover'));
+        if (dropZone && !dropZone.querySelector('.draggable')) {
+            dropZone.classList.add('hover');
+        }
+    }
+
+    function handleTouchEnd(e) {
+        const touch = e.changedTouches[0];
+        if (touchClone) {
+            touchClone.remove();
+            touchClone = null;
+        }
+        
+        document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover'));
+        const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dropZone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+
+        if (dropZone) {
+            checkMatch(dropZone, draggedItem);
+        }
+        
+        draggedItem = null;
+    }
+
+    function moveClone(x, y) {
+        if (touchClone) {
+            touchClone.style.left = (x - touchClone.offsetWidth / 2) + 'px';
+            touchClone.style.top = (y - touchClone.offsetHeight / 2) + 'px';
+        }
+    }
+
+    // --- 配對檢查 ---
+    function checkMatch(zone, item) {
+        if (zone.querySelector('.draggable')) return; // 已有答案
+
+        const answer = zone.dataset.answer;
+        const word = item.textContent;
+
+        if (answer === word) {
+            // 成功
+            const placeholder = zone.querySelector('.placeholder');
+            placeholder.style.display = 'none';
+
+            const matchedItem = document.createElement('div');
+            matchedItem.className = 'draggable matched';
+            matchedItem.textContent = word;
+            zone.appendChild(matchedItem);
+
+            item.style.visibility = 'hidden'; // 隱藏原本的
+            zone.style.borderColor = '#2E7D32';
+        } else {
+            // 失敗
+            zone.style.backgroundColor = '#FFEBEE';
+            setTimeout(() => {
+                zone.style.backgroundColor = '#D7CCC8';
+            }, 500);
+        }
+    }
+
+    // 啟動遊戲
+    initGame();
+
+</script>
+
+</body>
+</html>
