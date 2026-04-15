@@ -3,6 +3,7 @@ setlocal
 :: 設定編碼為 UTF-8
 chcp 65001 >nul
 
+
 :: --- 設定儲存路徑 (改用英文名稱以避免路徑錯誤) ---
 set "targetDir=%USERPROFILE%\Desktop\Boar_Downloads"
 
@@ -65,7 +66,7 @@ exit
 :Fail
 echo.
 echo ===================================================
-echo             下載失敗 (Failed) ❌
+echo             下載失敗 (Failed) ?
 echo ===================================================
 echo.
 echo 如果還是失敗，請檢查：
