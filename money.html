@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐗 山豬大富翁金控</title>
+    <style>
+        :root {
+            --primary: #8b5a2b;
+            --bg: #faf8f5;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --border: #e0d8c8;
+            --highlight: #d2b48c;
+            --stock-up: #d9534f; /* 台灣股市紅色上漲 */
+            --stock-down: #5cb85c; /* 台灣股市綠色下跌 */
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #6b4423;
+        }
+        button.danger {
+            background-color: #d9534f;
+        }
+        button.danger:hover {
+            background-color: #c9302c;
+        }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .player-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .player-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 2px dashed var(--border);
+            padding-bottom: 10px;
+        }
+        .stat {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .money {
+            color: #2e8b57;
+            font-weight: bold;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .actions button {
+            padding: 5px 10px;
+            font-size: 14px;
+            border-radius: 10px;
+            background-color: var(--highlight);
+            color: #333;
+            flex: 1 1 30%;
+        }
+        .actions button:hover {
+            background-color: #c4a47c;
+        }
+        .properties-list {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #555;
+            max-height: 120px;
+            overflow-y: auto;
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .prop-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .mortgaged { color: #d9534f; text-decoration: line-through; }
+        .hotel { color: #ff8c00; font-weight: bold; }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal h2 { margin-top: 0; color: var(--primary); }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input {
+            width: 100%; padding: 10px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 16px; box-sizing: border-box;
+        }
+        .modal-buttons {
+            display: flex; justify-content: space-between; margin-top: 20px; gap: 10px;
+        }
+        
+        /* Stock Market Styles */
+        .stock-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #eee; text-align: left;
+        }
+        .stock-info { flex: 1; }
+        .stock-name { font-weight: bold; }
+        .stock-price { font-size: 0.9em; }
+        .stock-price.up { color: var(--stock-up); }
+        .stock-price.down { color: var(--stock-down); }
+        .stock-actions button {
+            padding: 5px 10px; font-size: 12px; margin-left: 5px; border-radius: 5px;
+        }
+        
+        /* Log List */
+        .log-list {
+            text-align: left; font-size: 0.9em; color: #444; max-height: 250px; overflow-y: auto; background: var(--bg); padding: 10px; border-radius: 8px;
+        }
+        .log-item { margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; }
+        
+        #lock-screen {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--primary); color: white; justify-content: center;
+            align-items: center; flex-direction: column; z-index: 2000;
+        }
+        #lock-screen h1 { color: white; }
+        #lock-screen input { width: 250px; text-align: center; margin: 20px 0; }
+        #settlement-screen { display: none; }
+        .rank-item {
+            font-size: 1.2em; margin: 10px 0; padding: 15px; background: var(--bg);
+            border-radius: 8px; border-left: 5px solid var(--primary); text-align: left;
+        }
+        
+        /* Floating Ticker */
+        #stock-ticker {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #222;
+            color: #fff; padding: 10px 0; font-size: 14px; overflow: hidden; white-space: nowrap; z-index: 100;
+        }
+        #ticker-text { display: inline-block; animation: scroll-left 15s linear infinite; }
+        @keyframes scroll-left {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🐗 山豬大富翁金控 💰</h1>
+    <div class="subtitle">哼哧哼哧！你的專屬財務總管 + 證券交易所上線啦！</div>
+
+    <div class="controls">
+        <button onclick="addPlayer()">➕ 新增玩家</button>
+        <button onclick="openTransferModal()">💸 玩家轉帳</button>
+        <button onclick="openLockModal()">🔒 暫時鎖定 (防偷改)</button>
+        <button class="danger" onclick="settleGame()">🏆 結束結算</button>
+    </div>
+
+    <div class="players-grid" id="players-container">
+        <!-- 玩家卡片會長在這裡 -->
+    </div>
+
+    <!-- 股市跑馬燈 -->
+    <div id="stock-ticker"><div id="ticker-text">🐗 準備載入山豬華爾街股市資料... 噗嚕！</div></div>
+
+    <!-- 轉帳 (交錢) Modal -->
+    <div class="modal-overlay" id="transfer-modal">
+        <div class="modal">
+            <h2>💸 玩家轉帳 (交錢)</h2>
+            <div class="form-group">
+                <label>繳錢方 (誰付錢)：</label>
+                <select id="transfer-from"></select>
+            </div>
+            <div class="form-group">
+                <label>得錢方 (誰收錢)：</label>
+                <select id="transfer-to"></select>
+            </div>
+            <div class="form-group">
+                <label>金額 💰：</label>
+                <input type="number" id="transfer-amount" placeholder="請輸入金額...">
+            </div>
+            <div class="modal-buttons">
+                <button style="background: #aaa; width:100%;" onclick="closeModal('transfer-modal')">取消</button>
+                <button style="width:100%;" onclick="confirmTransfer()">確認轉帳 💸</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 投資系統 (股市) Modal -->
+    <div class="modal-overlay" id="stock-modal">
+        <div class="modal" style="max-width: 500px;">
+            <h2>📈 山豬華爾街 (投資系統)</h2>
+            <p id="stock-player-name" style="font-weight:bold; color:var(--primary);"></p>
+            <div id="stock-list-container">
+                <!-- 股票列表 -->
+            </div>
+            <div class="modal-buttons">
+                <button style="width: 100%; background: #aaa;" onclick="closeModal('stock-modal')">關閉</button>
+                <button style="width: 100%;" onclick="openStockHistory()">📜 交易紀錄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易紀錄 Modal -->
+    <div class="modal-overlay" id="history-modal">
+        <div class="modal">
+            <h2>📜 股市交易紀錄</h2>
+            <p id="history-player-name" style="font-weight:bold;"></p>
+            <div class="log-list" id="history-list">
+                <!-- 紀錄 -->
+            </div>
+            <div class="modal-buttons">
+                <button style="width: 100%; background: #aaa;" onclick="closeModal('history-modal')">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 蓋/拆房子 Modal -->
+    <div class="modal-overlay" id="house-modal">
+        <div class="modal">
+            <h2>🏠 蓋/拆房子</h2>
+            <div class="form-group">
+                <label>選擇你的地盤：</label>
+                <select id="house-prop" onchange="updateHouseInfo()"></select>
+            </div>
+            <p id="house-info" style="color: #666; font-size: 0.9em;"></p>
+            <div class="modal-buttons" style="justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button class="danger" onclick="sellHouse()">免費拆除 (不退錢)</button>
+                <button onclick="buildHouse()">手動加蓋 🏠</button>
+                <button style="background: #aaa; width: 100%; margin-top: 10px;" onclick="closeModal('house-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 買地 Modal -->
+    <div class="modal-overlay" id="buy-modal">
+        <div class="modal">
+            <h2>🏕️ 購買地產</h2>
+            <div class="form-group">
+                <label>選擇顏色分類：</label>
+                <select id="buy-color" onchange="updateBuyProperties()"></select>
+            </div>
+            <div class="form-group">
+                <label>選擇地產：</label>
+                <select id="buy-prop"></select>
+            </div>
+            <div class="modal-buttons">
+                <button style="background: #aaa;" onclick="closeModal('buy-modal')">取消</button>
+                <button onclick="confirmBuy()">確認購買 💰</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 抵押 Modal -->
+    <div class="modal-overlay" id="mortgage-modal">
+        <div class="modal">
+            <h2>🏦 抵押 / 贖回</h2>
+            <div class="form-group">
+                <label>選擇你的地產：</label>
+                <select id="mortgage-prop" onchange="updateMortgageInfo()"></select>
+            </div>
+            <p id="mortgage-info" style="color: #666; font-size: 0.9em;"></p>
+            <div class="modal-buttons">
+                <button style="background: #aaa;" onclick="closeModal('mortgage-modal')">取消</button>
+                <button id="mortgage-btn" onclick="confirmMortgage()">確認執行 🏦</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 鎖定設定 Modal -->
+    <div class="modal-overlay" id="set-lock-modal">
+        <div class="modal">
+            <h2>🔒 設定解鎖密碼</h2>
+            <p>哼哧！去上廁所前設個密碼，防偷改！</p>
+            <div class="form-group">
+                <input type="password" id="lock-password" placeholder="輸入密碼...">
+            </div>
+            <div class="modal-buttons">
+                <button style="background: #aaa;" onclick="closeModal('set-lock-modal')">取消</button>
+                <button onclick="executeLock()">鎖定畫面 🐗</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 鎖定畫面 -->
+    <div id="lock-screen">
+        <h1>🔒 系統已暫停！</h1>
+        <p>哼哧哼哧！畫面幫你藏起來了，誰也別想偷改數據！噗嚕！</p>
+        <input type="password" id="unlock-password" placeholder="請輸入密碼解鎖">
+        <button onclick="unlockSystem()">🔓 解鎖</button>
+    </div>
+
+    <!-- 結算畫面 -->
+    <div class="modal-overlay" id="settlement-screen">
+        <div class="modal" style="max-width: 500px;">
+            <h2>🏆 遊戲結算排行榜 🏆</h2>
+            <div id="ranking-list"></div>
+            <br>
+            <button onclick="location.reload()">🔄 重新開始新遊戲</button>
+        </div>
+    </div>
+
+    <script>
+        const initialProperties = [
+            {name: "基隆廟口夜市", color: "🔴 紅色", price: 2000}, {name: "台中逢甲夜市", color: "🔴 紅色", price: 2000}, {name: "高雄六合夜市", color: "🔴 紅色", price: 2000}, {name: "宜蘭羅東夜市", color: "🔴 紅色", price: 2000},
+            {name: "西門町商圈", color: "🌲 深綠色", price: 3000}, {name: "故宮博物院", color: "🌲 深綠色", price: 4000}, {name: "九份老街", color: "🌲 深綠色", price: 2400}, {name: "野柳地質公園", color: "🌲 深綠色", price: 1200},
+            {name: "石門水庫", color: "📙 橘黃色", price: 1600}, {name: "司馬庫斯", color: "📙 橘黃色", price: 1800}, {name: "城隍廟口商圈", color: "📙 橘黃色", price: 2200}, {name: "勝興車站", color: "📙 橘黃色", price: 1600},
+            {name: "高美濕地", color: "🟣 紫色", price: 1800}, {name: "國家歌劇院", color: "🟣 紫色", price: 3500}, {name: "日月潭", color: "🟣 紫色", price: 2800}, {name: "扇形車庫", color: "🟣 紫色", price: 2200},
+            {name: "古坑綠色隧道", color: "🍵 淺綠色", price: 1400}, {name: "阿里山國家風景區", color: "🍵 淺綠色", price: 2800}, {name: "檜意森活村", color: "🍵 淺綠色", price: 1200},
+            {name: "安平古堡", color: "🟤 咖啡色", price: 2600}, {name: "孔廟", color: "🟤 咖啡色", price: 2600}, {name: "駁二藝術特區", color: "🟤 咖啡色", price: 2400}, {name: "墾丁國家公園", color: "🟤 咖啡色", price: 3200}, {name: "小琉球", color: "🟤 咖啡色", price: 1400},
+            {name: "蘭陽博物館", color: "🔵 藍色", price: 3000}, {name: "太魯閣國家公園", color: "🔵 藍色", price: 3200}, {name: "七星潭", color: "🔵 藍色", price: 1000}, {name: "三仙台", color: "🔵 藍色", price: 1000},
+            {name: "馬祖八八坑道", color: "🏝️ 淺棕色", price: 800}, {name: "莒光樓", color: "🏝️ 淺棕色", price: 600}, {name: "雙心石滬", color: "🏝️ 淺棕色", price: 600}, {name: "蘭嶼", color: "🏝️ 淺棕色", price: 800}
+        ];
+
+        // 股票資料：加入 basePrice 讓系統知道初始價格，防止跌入無底洞
+        let marketStocks = [
+            { id: 0, name: "地瓜生技 🍠", basePrice: 100, price: 100, lastPrice: 100 },
+            { id: 1, name: "橡果金控 🌰", basePrice: 1000, price: 1000, lastPrice: 1000 },
+            { id: 2, name: "泥巴建設 🏗️", basePrice: 2000, price: 2000, lastPrice: 2000 },
+            { id: 3, name: "山林航運 🚢", basePrice: 5000, price: 5000, lastPrice: 5000 },
+            { id: 4, name: "大富翁台積電 🖥️", basePrice: 10000, price: 10000, lastPrice: 10000 }
+        ];
+
+        let players = {};
+        let properties = initialProperties.map(p => ({ ...p, owner: null, mortgaged: false, houses: 0 }));
+        let currentActionPlayer = null;
+        let systemPassword = "";
+
+        // 每60秒更新一次股市
+        setInterval(updateStocks, 60000);
+
+        function updateStocks() {
+            let tickerArr = [];
+            marketStocks.forEach(s => {
+                s.lastPrice = s.price;
+                
+                let changePercent;
+                if (s.price < s.basePrice * 0.5) {
+                    // 護盤機制：如果股價跌破發行價的一半，啟動國家隊救援！(-5% 到 +35%)
+                    changePercent = (Math.random() * 40 - 5) / 100;
+                } else {
+                    // 修正波動損耗：跌幅最多 20%，漲幅最多 25%，這樣長期期望值才會平衡
+                    changePercent = (Math.random() * 45 - 20) / 100;
+                }
+
+                let changeAmount = Math.round(s.price * changePercent);
+                
+                // 為了增加一點刺激感，如果是零，至少讓它動個 1 元
+                if (changeAmount === 0) {
+                    changeAmount = Math.random() > 0.5 ? 1 : -1;
+                }
+
+                s.price += changeAmount;
+                if (s.price < 1) s.price = 1; // 絕對不會跌到零
+                
+                let icon = changeAmount >= 0 ? '🔺' : '🔻';
+                let cls = changeAmount >= 0 ? 'up' : 'down';
+                tickerArr.push(`<span class="stock-price ${cls}">${s.name}: $${s.price} ${icon}</span>`);
+            });
+            
+            document.getElementById('ticker-text').innerHTML = "🐗 華爾街最新報價快訊： &nbsp;&nbsp;&nbsp; " + tickerArr.join(' &nbsp;|&nbsp; ');
+            
+            if (document.getElementById('stock-modal').style.display === 'flex') {
+                renderStockMarket(currentActionPlayer);
+            }
+            render(); // 更新背景玩家卡片上的市值
+        }
+        
+        // 初始跑馬燈
+        updateStocks();
+
+        function render() {
+            const container = document.getElementById('players-container');
+            container.innerHTML = '';
+            
+            for (const [name, data] of Object.entries(players)) {
+                let propsHTML = '';
+                let totalHousesCounter = 0;
+                let stockValue = 0;
+
+                data.stocks.forEach((qty, idx) => {
+                    stockValue += qty * marketStocks[idx].price;
+                });
+
+                data.properties.forEach(pName => {
+                    const prop = properties.find(p => p.name === pName);
+                    if (!prop) return;
+                    
+                    const statusClass = prop.mortgaged ? 'mortgaged' : (prop.houses === 4 ? 'hotel' : '');
+                    let statusText = '';
+                    
+                    if (prop.houses === 4) {
+                        statusText = '🏨 旅館(Max)';
+                        totalHousesCounter += 4;
+                    } else if (prop.houses > 0) {
+                        statusText = `🏠 x${prop.houses}`;
+                        totalHousesCounter += prop.houses;
+                    }
+                    if (prop.mortgaged) statusText += (statusText ? ' ' : '') + '(🔒已抵押)';
+
+                    propsHTML += `<div class="prop-item ${statusClass}"><span>${prop.color} ${pName}</span><span>${statusText}</span></div>`;
+                });
+
+                container.innerHTML += `
+                    <div class="player-card">
+                        <div class="player-name">🐗 ${name}</div>
+                        <div class="stat">💰 現金: <span class="money">$${data.money}</span></div>
+                        <div class="stat">📈 股票市值: <span>$${stockValue}</span></div>
+                        <div class="stat">🏠 總建地: <span>${totalHousesCounter} 單位</span></div>
+                        <div class="actions">
+                            <button onclick="changeMoney('${name}')">💵 加減錢</button>
+                            <button onclick="openBuyModal('${name}')">🏕️ 買地</button>
+                            <button onclick="openHouseModal('${name}')">🏠 蓋/拆房</button>
+                            <button onclick="openMortgageModal('${name}')">🏦 抵押/贖回</button>
+                            <button style="background:var(--stock-up);" onclick="openStockMarket('${name}')">📈 投資系統</button>
+                        </div>
+                        ${propsHTML ? `<div class="properties-list">${propsHTML}</div>` : '<div class="properties-list" style="color:#aaa; text-align:center;">還沒有地盤喔！</div>'}
+                    </div>
+                `;
+            }
+        }
+
+        function addPlayer() {
+            const name = prompt("🐗 噗嚕！請輸入新玩家名字：");
+            if (name && !players[name]) {
+                players[name] = { 
+                    money: 10000, 
+                    properties: [],
+                    stocks: [0, 0, 0, 0, 0],
+                    stockHistory: []
+                };
+                logStockHistory(name, "系統發放起始資金 💰 10000 元！");
+                render();
+            } else if (players[name]) {
+                alert("🐗💢 名字重複啦！換一個吧！");
+            }
+        }
+
+        function changeMoney(name) {
+            const amtStr = prompt(`要加減 ${name} 多少錢？\n(輸入正數加錢，負數扣錢)`);
+            if (amtStr !== null) {
+                const amt = parseInt(amtStr);
+                if (!isNaN(amt)) {
+                    players[name].money += amt;
+                    render();
+                } else {
+                    alert("🐗💦 只能輸入數字喔！");
+                }
+            }
+        }
+
+        // --- 轉帳 (交錢) 系統 ---
+        function openTransferModal() {
+            try {
+                const pNames = Object.keys(players);
+                if (pNames.length < 2) {
+                    alert("🐗💦 至少要有 2 個玩家才能互相轉帳喔！噗嚕！");
+                    return;
+                }
+                
+                let optionsHTML = '<option value="">請選擇玩家...</option>';
+                pNames.forEach(n => {
+                    optionsHTML += `<option value="${n}">${n}</option>`;
+                });
+                
+                document.getElementById('transfer-from').innerHTML = optionsHTML;
+                document.getElementById('transfer-to').innerHTML = optionsHTML;
+                document.getElementById('transfer-amount').value = '';
+                
+                document.getElementById('transfer-modal').style.display = 'flex';
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function confirmTransfer() {
+            try {
+                const from = document.getElementById('transfer-from').value;
+                const to = document.getElementById('transfer-to').value;
+                const amount = parseInt(document.getElementById('transfer-amount').value);
+
+                if (!from || !to) {
+                    alert("🐗💦 請選擇繳錢方和得錢方！"); return;
+                }
+                if (from === to) {
+                    alert("🐗💢 不能轉錢給自己啦！"); return;
+                }
+                if (isNaN(amount) || amount <= 0) {
+                    alert("🐗💦 金額必須是大於 0 的數字喔！"); return;
+                }
+                if (players[from].money < amount) {
+                    const confirmOverdraw = confirm(`🐗⚠️ ${from} 現金只有 $${players[from].money}，轉帳後會變成負債！確定要硬轉嗎？哼哧！`);
+                    if (!confirmOverdraw) return;
+                }
+
+                players[from].money -= amount;
+                players[to].money += amount;
+                
+                alert(`🐗💸 轉帳成功！\n${from} 繳交了 $${amount} 給 ${to}！`);
+                closeModal('transfer-modal');
+                render();
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        // --- 投資系統 (股票) ---
+        function openStockMarket(name) {
+            try {
+                currentActionPlayer = name;
+                document.getElementById('stock-player-name').innerText = `目前操作玩家：🐗 ${name}`;
+                renderStockMarket(name);
+                document.getElementById('stock-modal').style.display = 'flex';
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function renderStockMarket(name) {
+            const container = document.getElementById('stock-list-container');
+            const pData = players[name];
+            let html = '';
+            
+            marketStocks.forEach((s, idx) => {
+                const diff = s.price - s.lastPrice;
+                const cls = diff >= 0 ? 'up' : 'down';
+                const sign = diff >= 0 ? '🔺' : '🔻';
+                
+                html += `
+                    <div class="stock-row">
+                        <div class="stock-info">
+                            <div class="stock-name">${s.name}</div>
+                            <div class="stock-price ${cls}">現價: $${s.price} ${sign} (持股: ${pData.stocks[idx]} 張)</div>
+                        </div>
+                        <div class="stock-actions">
+                            <button onclick="buyStock(${idx})">買入</button>
+                            <button class="danger" onclick="sellStock(${idx})">賣出</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function buyStock(idx) {
+            try {
+                const s = marketStocks[idx];
+                const p = players[currentActionPlayer];
+                
+                if (p.money < s.price) {
+                    alert("🐗💦 錢不夠買這張股票啦！快去賺錢！");
+                    return;
+                }
+                
+                const qtyStr = prompt(`你要買幾張【${s.name}】？ (現價: $${s.price})\n(目前現金: $${p.money})`, "1");
+                if (qtyStr === null) return;
+                
+                const qty = parseInt(qtyStr);
+                if (isNaN(qty) || qty <= 0) return;
+                
+                const totalCost = s.price * qty;
+                if (p.money < totalCost) {
+                    alert(`🐗💦 錢不夠買 ${qty} 張！總共需要 $${totalCost}！`);
+                    return;
+                }
+                
+                p.money -= totalCost;
+                p.stocks[idx] += qty;
+                
+                const time = new Date().toLocaleTimeString();
+                logStockHistory(currentActionPlayer, `[${time}] 買入 ${qty} 張【${s.name}】@ $${s.price}，花費 $${totalCost}`);
+                
+                renderStockMarket(currentActionPlayer);
+                render();
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function sellStock(idx) {
+            try {
+                const s = marketStocks[idx];
+                const p = players[currentActionPlayer];
+                
+                if (p.stocks[idx] <= 0) {
+                    alert("🐗💦 你根本沒有這張股票可以賣啦！");
+                    return;
+                }
+                
+                const qtyStr = prompt(`你要賣幾張【${s.name}】？ (現價: $${s.price})\n(目前持股: ${p.stocks[idx]} 張)`, "1");
+                if (qtyStr === null) return;
+                
+                const qty = parseInt(qtyStr);
+                if (isNaN(qty) || qty <= 0) return;
+                
+                if (qty > p.stocks[idx]) {
+                    alert(`🐗💦 你只有 ${p.stocks[idx]} 張，不能賣超過啦！`);
+                    return;
+                }
+                
+                const totalEarn = s.price * qty;
+                p.money += totalEarn;
+                p.stocks[idx] -= qty;
+                
+                const time = new Date().toLocaleTimeString();
+                logStockHistory(currentActionPlayer, `[${time}] 賣出 ${qty} 張【${s.name}】@ $${s.price}，獲得 $${totalEarn}`);
+                
+                renderStockMarket(currentActionPlayer);
+                render();
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function logStockHistory(name, msg) {
+            players[name].stockHistory.unshift(msg);
+        }
+
+        function openStockHistory() {
+            try {
+                const name = currentActionPlayer;
+                const container = document.getElementById('history-list');
+                document.getElementById('history-player-name').innerText = `🐗 ${name} 的交易紀錄`;
+                
+                let html = '';
+                const history = players[name].stockHistory;
+                if (history.length === 0) {
+                    html = '<div style="text-align:center; padding: 20px;">還沒有任何交易紀錄喔！</div>';
+                } else {
+                    history.forEach(log => {
+                        html += `<div class="log-item">${log}</div>`;
+                    });
+                }
+                
+                container.innerHTML = html;
+                document.getElementById('history-modal').style.display = 'flex';
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        // --- 房子邏輯 ---
+        function openHouseModal(name) {
+            try {
+                currentActionPlayer = name;
+                const propSelect = document.getElementById('house-prop');
+                
+                if (!players[name] || players[name].properties.length === 0) {
+                    alert("🐗💦 你還沒有買任何可以蓋房子的地盤喔！"); return;
+                }
+
+                let optionsHTML = '';
+                players[name].properties.forEach(pName => {
+                    const prop = properties.find(p => p.name === pName);
+                    if (prop) {
+                        let hStr = prop.houses === 4 ? '🏨 旅館(滿)' : `🏠 x${prop.houses}`;
+                        optionsHTML += `<option value="${prop.name}">${prop.name} [${hStr}]</option>`;
+                    }
+                });
+                propSelect.innerHTML = optionsHTML;
+
+                document.getElementById('house-modal').style.display = 'flex';
+                updateHouseInfo();
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function updateHouseInfo() {
+            const pName = document.getElementById('house-prop').value;
+            const prop = properties.find(p => p.name === pName);
+            const info = document.getElementById('house-info');
+            if(!prop) return;
+            
+            if(prop.houses === 4) info.innerHTML = "目前狀態：<b>🏨 旅館 (滿級啦！)</b><br>不能再蓋了，但可以免費拆除。";
+            else info.innerHTML = `目前狀態：<b>🏠 ${prop.houses} 棟</b><br>系統不會自動扣錢，請自己手動扣喔！噗嚕！`;
+        }
+
+        function buildHouse() {
+            const pName = document.getElementById('house-prop').value;
+            const prop = properties.find(p => p.name === pName);
+            if (!prop) return;
+            if(prop.houses >= 4) { alert("🐗💦 噗嚕！已經是頂級旅館了，不能再往上蓋啦！"); return; }
+            
+            prop.houses += 1;
+            closeModal('house-modal'); render();
+        }
+
+        function sellHouse() {
+            const pName = document.getElementById('house-prop').value;
+            const prop = properties.find(p => p.name === pName);
+            if (!prop) return;
+            if(prop.houses <= 0) { alert("🐗💦 這裡一棟房子都沒有，沒東西可以拆啦！"); return; }
+            
+            prop.houses -= 1;
+            alert("🐗💦 噗嚕！山豬大隊已經幫你把房子撞掉囉！(不退錢)");
+            closeModal('house-modal'); render();
+        }
+
+        // --- 買地邏輯 ---
+        function openBuyModal(name) {
+            try {
+                currentActionPlayer = name;
+                const colorSelect = document.getElementById('buy-color');
+                const colors = [...new Set(properties.map(p => p.color))].sort();
+                
+                let colorHTML = '<option value="">請選擇顏色...</option>';
+                colors.forEach(c => {
+                    const available = properties.filter(p => p.color === c && !p.owner).length;
+                    if(available > 0) colorHTML += `<option value="${c}">${c} (剩餘 ${available} 塊)</option>`;
+                });
+                colorSelect.innerHTML = colorHTML;
+                document.getElementById('buy-prop').innerHTML = '<option value="">請先選擇顏色</option>';
+                document.getElementById('buy-modal').style.display = 'flex';
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function updateBuyProperties() {
+            const color = document.getElementById('buy-color').value;
+            const propSelect = document.getElementById('buy-prop');
+            if (!color) { propSelect.innerHTML = '<option value="">請先選擇顏色</option>'; return; }
+
+            const availProps = properties.filter(p => p.color === color && !p.owner);
+            let propHTML = '';
+            availProps.forEach(p => { propHTML += `<option value="${p.name}">${p.name} ($${p.price})</option>`; });
+            propSelect.innerHTML = propHTML;
+        }
+
+        function confirmBuy() {
+            const propName = document.getElementById('buy-prop').value;
+            if (!propName) return;
+
+            const prop = properties.find(p => p.name === propName);
+            if (!prop) return;
+
+            if (players[currentActionPlayer].money < prop.price) {
+                alert("🐗💦 錢不夠買這塊地啦！噗嚕！"); return;
+            }
+
+            players[currentActionPlayer].money -= prop.price;
+            players[currentActionPlayer].properties.push(prop.name);
+            prop.owner = currentActionPlayer;
+            closeModal('buy-modal'); render();
+        }
+
+        // --- 抵押邏輯 ---
+        function openMortgageModal(name) {
+            try {
+                currentActionPlayer = name;
+                const propSelect = document.getElementById('mortgage-prop');
+                if (players[name].properties.length === 0) {
+                    alert("🐗💦 報告總裁，這個玩家名下一塊地都沒有喔！"); return;
+                }
+
+                let optionsHTML = '';
+                players[name].properties.forEach(pName => {
+                    const prop = properties.find(p => p.name === pName);
+                    if (prop) {
+                        const status = prop.mortgaged ? "🔒已抵押" : "✅正常";
+                        const houseInfo = prop.houses > 0 ? ` (有${prop.houses}棟)` : '';
+                        optionsHTML += `<option value="${prop.name}">${prop.name} [${status}]${houseInfo}</option>`;
+                    }
+                });
+                propSelect.innerHTML = optionsHTML;
+                document.getElementById('mortgage-modal').style.display = 'flex';
+                updateMortgageInfo();
+            } catch (err) { alert("🐗💢 " + err.message); }
+        }
+
+        function updateMortgageInfo() {
+            const propName = document.getElementById('mortgage-prop').value;
+            const prop = properties.find(p => p.name === propName);
+            const info = document.getElementById('mortgage-info');
+            const btn = document.getElementById('mortgage-btn');
+            
+            if (!prop) { info.innerHTML = ''; btn.disabled = true; return; }
+            
+            const halfPrice = Math.floor(prop.price / 2);
+            if (prop.mortgaged) {
+                info.innerHTML = `贖回需支付: <b>$${halfPrice}</b>`;
+                btn.innerHTML = "確認贖回 💰";
+            } else {
+                info.innerHTML = `抵押可獲得: <b>$${halfPrice}</b>`;
+                btn.innerHTML = "確認抵押 🏦";
+            }
+            btn.disabled = false; btn.style.background = "var(--primary)";
+        }
+
+        function confirmMortgage() {
+            const propName = document.getElementById('mortgage-prop').value;
+            if (!propName) return;
+            const prop = properties.find(p => p.name === propName);
+            if (!prop) return;
+            
+            const halfPrice = Math.floor(prop.price / 2);
+            if (prop.mortgaged) {
+                if (players[currentActionPlayer].money < halfPrice) {
+                    alert("🐗💦 錢不夠贖回啦！"); return;
+                }
+                players[currentActionPlayer].money -= halfPrice;
+                prop.mortgaged = false;
+            } else {
+                players[currentActionPlayer].money += halfPrice;
+                prop.mortgaged = true;
+            }
+            closeModal('mortgage-modal'); render();
+        }
+
+        // --- 鎖定邏輯 ---
+        function openLockModal() {
+            document.getElementById('set-lock-modal').style.display = 'flex';
+            document.getElementById('lock-password').value = '';
+        }
+        function executeLock() {
+            systemPassword = document.getElementById('lock-password').value;
+            if (!systemPassword) { alert("🐗 哼哧！要輸入密碼才能鎖定喔！"); return; }
+            closeModal('set-lock-modal');
+            document.getElementById('lock-screen').style.display = 'flex';
+            document.getElementById('unlock-password').value = '';
+        }
+        function unlockSystem() {
+            if (document.getElementById('unlock-password').value === systemPassword) {
+                document.getElementById('lock-screen').style.display = 'none';
+            } else { alert("❌ 密碼錯誤！休想騙過本山豬！🐗💢"); }
+        }
+
+        // --- 結算邏輯 ---
+        function settleGame() {
+            if(Object.keys(players).length === 0) { alert("🐗 噗嚕！還沒有玩家加入喔！"); return; }
+            if(!confirm("🐗 確定要結束遊戲並結算嗎？哼哧！")) return;
+
+            let results = [];
+            for (const [name, data] of Object.entries(players)) {
+                let total = data.money;
+                
+                data.properties.forEach(pName => {
+                    const prop = properties.find(p => p.name === pName);
+                    if (!prop) return;
+                    total += Math.floor(prop.price / 2);
+                    total += prop.houses * 500;
+                });
+                
+                data.stocks.forEach((qty, idx) => {
+                    total += qty * marketStocks[idx].price;
+                });
+                
+                results.push({ name, total });
+            }
+
+            results.sort((a, b) => b.total - a.total);
+            
+            const listDiv = document.getElementById('ranking-list');
+            listDiv.innerHTML = '';
+            results.forEach((r, idx) => {
+                const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🐗'));
+                listDiv.innerHTML += `<div class="rank-item">${medal} 第 ${idx+1} 名：<b>${r.name}</b> (總資產: $${r.total})</div>`;
+            });
+
+            document.getElementById('settlement-screen').style.display = 'flex';
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        render();
+    </script>
+</body>
+</html>
