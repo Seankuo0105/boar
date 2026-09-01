@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山豬測驗兵工廠 🐗🔨</title>
+    <style>
+        body { font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f7f7; color: #4b4b4b; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 800px; background-color: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h1 { color: #58cc02; text-align: center; font-size: 32px; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #afafaf; margin-bottom: 30px; font-weight: bold; }
+        
+        .title-group { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px dashed #e5e5e5; }
+        .title-group input { width: 100%; padding: 15px; border: 2px solid #e5e5e5; border-radius: 10px; font-size: 20px; font-weight: bold; box-sizing: border-box; }
+        
+        .q-card { border: 2px solid #e5e5e5; border-radius: 16px; padding: 20px; margin-bottom: 20px; position: relative; background-color: #fafafa; }
+        .q-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .q-card-header h3 { margin: 0; color: #1cb0f6; }
+        .type-select { padding: 8px; border-radius: 8px; border: 2px solid #e5e5e5; font-weight: bold; outline: none; }
+        .remove-btn { background: #ffdfe0; color: #ea2b2b; border: none; padding: 5px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], textarea, select { padding: 12px; border: 2px solid #e5e5e5; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; font-family: inherit;}
+        input:focus, textarea:focus { border-color: #84d8ff; background-color: white; }
+        .correct-input { border-color: #d7ffb8 !important; background-color: #f4ffeb; }
+        .dynamic-fields { padding-top: 10px; border-top: 1px dashed #ccc; }
+
+        .btn { background-color: #e5e5e5; color: #afafaf; border: none; border-radius: 16px; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-bottom: 4px solid #cecece; display: block; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        .btn-add { background-color: #1cb0f6; color: white; border-bottom-color: #1899d6; }
+        .btn-generate { background-color: #58cc02; color: white; border-bottom-color: #58a700; margin-top: 20px; }
+        .btn:active { border-bottom-width: 0px; transform: translateY(4px); }
+
+        .result-area { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #e5e5e5; display: none; }
+        .result-area.show { display: block; }
+        .result-area textarea { background-color: #f7f7f7; word-break: break-all; }
+        .hint { font-size: 12px; color: #afafaf; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🐗🔨 噗嚕！山豬測驗兵工廠 </h1>
+    <p class="subtitle">支援選擇、是非、填空、排序、配對！打造終極特訓！</p>
+
+    <div class="title-group">
+        <label>👑 測驗標題</label>
+        <input type="text" id="quiz-title" placeholder="例如：山豬盃 英文大會考" value="山豬的終極特訓 🐗">
+    </div>
+
+    <div id="questions-list"></div>
+
+    <button class="btn btn-add" id="add-q-btn">➕ 新增一題</button>
+    <button class="btn btn-generate" id="generate-btn">✨ 產生測驗代碼 🐗💦</button>
+
+    <div class="result-area" id="result-area">
+        <h3>🎉 噗嚕！代碼做好了！</h3>
+        <label>測驗代碼 ( Base64 )：</label>
+        <textarea id="output-code" rows="5" readonly></textarea>
+        
+        <label>專屬網址 (可直接傳給朋友)：</label>
+        <textarea id="output-url" rows="3" readonly></textarea>
+        
+        <button class="btn btn-add" id="copy-btn" style="width: auto;">📋 複製代碼</button>
+    </div>
+</div>
+
+<script>
+    let qCount = 0;
+
+    function createQuestionCard() {
+        qCount++;
+        const id = qCount;
+        const div = document.createElement('div');
+        div.className = 'q-card';
+        div.id = `q-card-${id}`;
+        
+        div.innerHTML = `
+            <div class="q-card-header">
+                <h3>第 ${id} 題 🐗</h3>
+                <div>
+                    <select class="type-select" onchange="changeType(this, ${id})">
+                        <option value="mc">📝 選擇題 (不限選項)</option>
+                        <option value="tf">⭕ 是非題</option>
+                        <option value="input">⌨️ 手打題 / 填空題</option>
+                        <option value="order">🔢 排序題</option>
+                        <option value="match">🔗 配對題</option>
+                    </select>
+                    <button class="remove-btn" onclick="document.getElementById('q-card-${id}').remove()">刪除</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>題目內容</label>
+                <input type="text" class="q-text" placeholder="輸入題目...">
+            </div>
+            <div id="fields-${id}" class="dynamic-fields">
+                <!-- 預設顯示選擇題欄位 -->
+            </div>
+        `;
+        document.getElementById('questions-list').appendChild(div);
+        changeType(div.querySelector('.type-select'), id); // 初始化欄位
+    }
+
+    function changeType(selectEl, id) {
+        const type = selectEl.value;
+        const fieldsDiv = document.getElementById(`fields-${id}`);
+        
+        if (type === 'mc') {
+            fieldsDiv.innerHTML = `
+                <div class="input-group">
+                    <label>✅ 正確答案 (1個)</label>
+                    <input type="text" class="q-mc-a correct-input" placeholder="輸入正確答案...">
+                </div>
+                <div class="input-group">
+                    <label>❌ 錯誤選項 (每行一個，想出幾個就出幾個)</label>
+                    <textarea class="q-mc-w" rows="3" placeholder="錯誤選項 1\n錯誤選項 2\n錯誤選項 3..."></textarea>
+                </div>`;
+        } else if (type === 'tf') {
+            fieldsDiv.innerHTML = `
+                <div class="input-group">
+                    <label>✅ 正確答案</label>
+                    <select class="q-tf-a correct-input">
+                        <option value="O">O (對)</option>
+                        <option value="X">X (錯)</option>
+                    </select>
+                </div>`;
+        } else if (type === 'input') {
+            fieldsDiv.innerHTML = `
+                <div class="input-group">
+                    <label>✅ 必須完全相符的文字答案</label>
+                    <input type="text" class="q-in-a correct-input" placeholder="例如：apple">
+                    <div class="hint">玩家手打的文字必須與此完全相同(不分大小寫)</div>
+                </div>`;
+        } else if (type === 'order') {
+            fieldsDiv.innerHTML = `
+                <div class="input-group">
+                    <label>✅ 正確順序項目 (每行一個，從上到下為正確順序)</label>
+                    <textarea class="q-ord-a correct-input" rows="4" placeholder="第一步\n第二步\n第三步..."></textarea>
+                </div>`;
+        } else if (type === 'match') {
+            fieldsDiv.innerHTML = `
+                <div style="display:flex; gap:10px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>左側項目 (每行一個)</label>
+                        <textarea class="q-mat-l correct-input" rows="4" placeholder="Apple\nBanana\nCat"></textarea>
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>右側對應 (與左側對齊，每行一個)</label>
+                        <textarea class="q-mat-r correct-input" rows="4" placeholder="蘋果\n香蕉\n貓"></textarea>
+                    </div>
+                </div>
+                <div class="hint">左側第一行會配對右側第一行，以此類推。</div>`;
+        }
+    }
+
+    document.getElementById('add-q-btn').addEventListener('click', createQuestionCard);
+
+    document.getElementById('generate-btn').addEventListener('click', () => {
+        const title = document.getElementById('quiz-title').value.trim() || "山豬的終極特訓 🐗";
+        const cards = document.querySelectorAll('.q-card');
+        if (cards.length === 0) { alert("哼哧！至少要出一題吧！🐗💦"); return; }
+
+        let quizData = { title: title, qs: [] };
+        let hasError = false;
+
+        cards.forEach(card => {
+            const type = card.querySelector('.type-select').value;
+            const qText = card.querySelector('.q-text').value.trim();
+            if (!qText) hasError = true;
+
+            let qObj = { t: type, q: qText };
+
+            if (type === 'mc') {
+                const a = card.querySelector('.q-mc-a').value.trim();
+                const wLines = card.querySelector('.q-mc-w').value.split('\n').map(s=>s.trim()).filter(s=>s);
+                if (!a || wLines.length === 0) hasError = true;
+                qObj.a = a; qObj.w = wLines;
+            } else if (type === 'tf') {
+                qObj.a = card.querySelector('.q-tf-a').value;
+            } else if (type === 'input') {
+                const a = card.querySelector('.q-in-a').value.trim();
+                if (!a) hasError = true;
+                qObj.a = a;
+            } else if (type === 'order') {
+                const aLines = card.querySelector('.q-ord-a').value.split('\n').map(s=>s.trim()).filter(s=>s);
+                if (aLines.length < 2) hasError = true;
+                qObj.a = aLines;
+            } else if (type === 'match') {
+                const lLines = card.querySelector('.q-mat-l').value.split('\n').map(s=>s.trim()).filter(s=>s);
+                const rLines = card.querySelector('.q-mat-r').value.split('\n').map(s=>s.trim()).filter(s=>s);
+                if (lLines.length < 2 || lLines.length !== rLines.length) hasError = true;
+                qObj.p = lLines.map((l, i) => ({ l: l, r: rLines[i] }));
+            }
+
+            if (hasError) card.style.borderColor = "#ea2b2b"; else { card.style.borderColor = "#e5e5e5"; quizData.qs.push(qObj); }
+        });
+
+        if (hasError) { alert("噗嚕！有題目沒填寫完整或配對題行數不一致喔，請檢查紅框的地方！🐗💦"); return; }
+
+        const jsonStr = JSON.stringify(quizData);
+        const base64Code = btoa(encodeURIComponent(jsonStr));
+
+        document.getElementById('output-code').value = base64Code;
+        let playerUrl = window.location.href.replace('creator.html', 'player.html');
+        if (!playerUrl.includes('player.html')) playerUrl = "http://seankuo0105.github.io/boar/qp.html";
+        document.getElementById('output-url').value = `${playerUrl}?code=${base64Code}`;
+
+        document.getElementById('result-area').classList.add('show');
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+        document.getElementById('output-code').select();
+        document.execCommand('copy');
+        alert("🐗✨ 代碼複製成功！快去遊玩區貼上吧！噗嚕！");
+    });
+
+    createQuestionCard(); // 預設一題
+</script>
+</body>
+</html>
