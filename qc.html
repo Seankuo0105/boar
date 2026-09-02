@@ -40,8 +40,8 @@
 <body>
 
 <div class="container">
-    <h1>🐗🔨 噗嚕！山豬測驗兵工廠 </h1>
-    <p class="subtitle">支援選擇、是非、填空、排序、配對！打造終極特訓！</p>
+    <h1>🐗🔨 噗嚕！山豬測驗兵工廠</h1>
+    <p class="subtitle">支援選擇、是非、填空、排序、配對、圖片位置！</p>
 
     <div class="title-group">
         <label>👑 測驗標題</label>
@@ -59,14 +59,23 @@
         <textarea id="output-code" rows="5" readonly></textarea>
         
         <label>專屬網址 (可直接傳給朋友)：</label>
-        <textarea id="output-url" rows="3" readonly></textarea>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <textarea id="output-url" rows="2" style="flex:1; margin-bottom:0;" readonly></textarea>
+            <button class="btn btn-add" id="copy-url-btn" style="width:auto; margin-bottom:0; padding:10px;">📋 複製網址</button>
+        </div>
         
-        <button class="btn btn-add" id="copy-btn" style="width: auto;">📋 複製代碼</button>
+        <button class="btn btn-add" id="copy-btn">📋 複製代碼</button>
     </div>
 </div>
 
 <script>
     let qCount = 0;
+
+    function updateQuestionNumbers() {
+        document.querySelectorAll('.q-card').forEach((card, index) => {
+            card.querySelector('.q-title-display').textContent = `第 ${index + 1} 題 🐗`;
+        });
+    }
 
     function createQuestionCard() {
         qCount++;
@@ -77,7 +86,7 @@
         
         div.innerHTML = `
             <div class="q-card-header">
-                <h3>第 ${id} 題 🐗</h3>
+                <h3 class="q-title-display">第 題 🐗</h3>
                 <div>
                     <select class="type-select" onchange="changeType(this, ${id})">
                         <option value="mc">📝 選擇題 (不限選項)</option>
@@ -85,20 +94,44 @@
                         <option value="input">⌨️ 手打題 / 填空題</option>
                         <option value="order">🔢 排序題</option>
                         <option value="match">🔗 配對題</option>
+                        <option value="pos">📍 位置題 (圖片點擊)</option>
                     </select>
-                    <button class="remove-btn" onclick="document.getElementById('q-card-${id}').remove()">刪除</button>
+                    <button class="remove-btn" onclick="removeCard(${id})">刪除</button>
                 </div>
             </div>
             <div class="input-group">
                 <label>題目內容</label>
                 <input type="text" class="q-text" placeholder="輸入題目...">
             </div>
-            <div id="fields-${id}" class="dynamic-fields">
-                <!-- 預設顯示選擇題欄位 -->
-            </div>
+            <div id="fields-${id}" class="dynamic-fields"></div>
         `;
         document.getElementById('questions-list').appendChild(div);
-        changeType(div.querySelector('.type-select'), id); // 初始化欄位
+        changeType(div.querySelector('.type-select'), id);
+        updateQuestionNumbers();
+    }
+
+    function removeCard(id) {
+        const card = document.getElementById(`q-card-${id}`);
+        if(card) { card.remove(); updateQuestionNumbers(); }
+    }
+
+    function compressImage(file, callback) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const MAX_WIDTH = 500;
+                let width = img.width; let height = img.height;
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.6));
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function changeType(selectEl, id) {
@@ -116,40 +149,63 @@
                     <textarea class="q-mc-w" rows="3" placeholder="錯誤選項 1\n錯誤選項 2\n錯誤選項 3..."></textarea>
                 </div>`;
         } else if (type === 'tf') {
-            fieldsDiv.innerHTML = `
-                <div class="input-group">
-                    <label>✅ 正確答案</label>
-                    <select class="q-tf-a correct-input">
-                        <option value="O">O (對)</option>
-                        <option value="X">X (錯)</option>
-                    </select>
-                </div>`;
+            fieldsDiv.innerHTML = `<div class="input-group"><label>✅ 正確答案</label><select class="q-tf-a correct-input"><option value="O">O (對)</option><option value="X">X (錯)</option></select></div>`;
         } else if (type === 'input') {
-            fieldsDiv.innerHTML = `
-                <div class="input-group">
-                    <label>✅ 必須完全相符的文字答案</label>
-                    <input type="text" class="q-in-a correct-input" placeholder="例如：apple">
-                    <div class="hint">玩家手打的文字必須與此完全相同(不分大小寫)</div>
-                </div>`;
+            fieldsDiv.innerHTML = `<div class="input-group"><label>✅ 必須完全相符的文字答案</label><input type="text" class="q-in-a correct-input" placeholder="例如：apple"><div class="hint">玩家手打的文字必須與此完全相同(不分大小寫)</div></div>`;
         } else if (type === 'order') {
+            fieldsDiv.innerHTML = `<div class="input-group"><label>✅ 正確順序項目 (每行一個，從上到下為正確順序)</label><textarea class="q-ord-a correct-input" rows="4" placeholder="第一步\n第二步\n第三步..."></textarea></div>`;
+        } else if (type === 'match') {
+            fieldsDiv.innerHTML = `<div style="display:flex; gap:10px;"><div class="input-group" style="flex:1;"><label>左側項目 (每行一個)</label><textarea class="q-mat-l correct-input" rows="4" placeholder="Apple\nBanana"></textarea></div><div class="input-group" style="flex:1;"><label>右側對應 (與左側對齊)</label><textarea class="q-mat-r correct-input" rows="4" placeholder="蘋果\n香蕉"></textarea></div></div>`;
+        } else if (type === 'pos') {
             fieldsDiv.innerHTML = `
                 <div class="input-group">
-                    <label>✅ 正確順序項目 (每行一個，從上到下為正確順序)</label>
-                    <textarea class="q-ord-a correct-input" rows="4" placeholder="第一步\n第二步\n第三步..."></textarea>
+                    <label>上傳圖片</label>
+                    <input type="file" accept="image/*" class="q-pos-file">
+                    <div class="hint">上傳圖片後，在圖片上拖曳畫出「正確點擊範圍」。</div>
+                    <canvas class="q-pos-canvas" style="max-width:100%; border:2px dashed #ccc; display:none; cursor:crosshair; margin-top:10px;"></canvas>
+                    <input type="hidden" class="q-pos-data">
+                    <input type="hidden" class="q-pos-rect">
                 </div>`;
-        } else if (type === 'match') {
-            fieldsDiv.innerHTML = `
-                <div style="display:flex; gap:10px;">
-                    <div class="input-group" style="flex:1;">
-                        <label>左側項目 (每行一個)</label>
-                        <textarea class="q-mat-l correct-input" rows="4" placeholder="Apple\nBanana\nCat"></textarea>
-                    </div>
-                    <div class="input-group" style="flex:1;">
-                        <label>右側對應 (與左側對齊，每行一個)</label>
-                        <textarea class="q-mat-r correct-input" rows="4" placeholder="蘋果\n香蕉\n貓"></textarea>
-                    </div>
-                </div>
-                <div class="hint">左側第一行會配對右側第一行，以此類推。</div>`;
+                
+            const fileInput = fieldsDiv.querySelector('.q-pos-file');
+            const cvs = fieldsDiv.querySelector('.q-pos-canvas');
+            const dataInp = fieldsDiv.querySelector('.q-pos-data');
+            const rectInp = fieldsDiv.querySelector('.q-pos-rect');
+            let imgObj = null;
+
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0]; if(!file) return;
+                compressImage(file, (base64) => {
+                    dataInp.value = base64; imgObj = new Image();
+                    imgObj.onload = () => {
+                        cvs.style.display = 'block'; cvs.width = cvs.parentElement.clientWidth; cvs.height = (imgObj.height / imgObj.width) * cvs.width;
+                        const ctx = cvs.getContext('2d'); ctx.drawImage(imgObj, 0, 0, cvs.width, cvs.height);
+                    };
+                    imgObj.src = base64;
+                });
+            };
+
+            let isDraw = false, sX, sY;
+            const getP = (e) => {
+                const r = cvs.getBoundingClientRect();
+                const cx = e.clientX || (e.touches && e.touches[0].clientX);
+                const cy = e.clientY || (e.touches && e.touches[0].clientY);
+                return { x: cx - r.left, y: cy - r.top };
+            };
+            const drawStart = (e) => { if(!imgObj) return; e.preventDefault(); isDraw = true; const p = getP(e); sX = p.x; sY = p.y; };
+            const drawMove = (e) => {
+                if(!isDraw) return; e.preventDefault(); const p = getP(e); const ctx = cvs.getContext('2d');
+                ctx.clearRect(0,0,cvs.width,cvs.height); ctx.drawImage(imgObj,0,0,cvs.width,cvs.height);
+                ctx.strokeStyle = 'red'; ctx.lineWidth = 3; ctx.strokeRect(sX, sY, p.x - sX, p.y - sY);
+            };
+            const drawEnd = (e) => {
+                if(!isDraw) return; isDraw = false; const p = getP(e.changedTouches ? e.changedTouches[0] : e);
+                let xP = (sX / cvs.width) * 100, yP = (sY / cvs.height) * 100;
+                let wP = ((p.x - sX) / cvs.width) * 100, hP = ((p.y - sY) / cvs.height) * 100;
+                rectInp.value = JSON.stringify({x: xP, y: yP, w: wP, h: hP});
+            };
+            cvs.addEventListener('mousedown', drawStart); cvs.addEventListener('mousemove', drawMove); cvs.addEventListener('mouseup', drawEnd);
+            cvs.addEventListener('touchstart', drawStart, {passive:false}); cvs.addEventListener('touchmove', drawMove, {passive:false}); cvs.addEventListener('touchend', drawEnd);
         }
     }
 
@@ -190,30 +246,31 @@
                 const rLines = card.querySelector('.q-mat-r').value.split('\n').map(s=>s.trim()).filter(s=>s);
                 if (lLines.length < 2 || lLines.length !== rLines.length) hasError = true;
                 qObj.p = lLines.map((l, i) => ({ l: l, r: rLines[i] }));
+            } else if (type === 'pos') {
+                const imgBase64 = card.querySelector('.q-pos-data').value;
+                const rectStr = card.querySelector('.q-pos-rect').value;
+                if (!imgBase64 || !rectStr) hasError = true;
+                else { qObj.img = imgBase64; qObj.rect = JSON.parse(rectStr); }
             }
 
             if (hasError) card.style.borderColor = "#ea2b2b"; else { card.style.borderColor = "#e5e5e5"; quizData.qs.push(qObj); }
         });
 
-        if (hasError) { alert("噗嚕！有題目沒填寫完整或配對題行數不一致喔，請檢查紅框的地方！🐗💦"); return; }
+        if (hasError) { alert("噗嚕！有題目沒填寫完整、配對題行數不一致，或是圖片位置沒畫框框喔！請檢查紅框的地方！🐗💦"); return; }
 
         const jsonStr = JSON.stringify(quizData);
         const base64Code = btoa(encodeURIComponent(jsonStr));
 
         document.getElementById('output-code').value = base64Code;
-        let playerUrl = window.location.href.replace('creator.html', 'player.html');
-        if (!playerUrl.includes('player.html')) playerUrl = "http://seankuo0105.github.io/boar/qp.html";
+        let playerUrl = "https://seankuo0105.github.io/boar/qp.html";
         document.getElementById('output-url').value = `${playerUrl}?code=${base64Code}`;
 
         document.getElementById('result-area').classList.add('show');
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
-    document.getElementById('copy-btn').addEventListener('click', () => {
-        document.getElementById('output-code').select();
-        document.execCommand('copy');
-        alert("🐗✨ 代碼複製成功！快去遊玩區貼上吧！噗嚕！");
-    });
+    document.getElementById('copy-btn').addEventListener('click', () => { document.getElementById('output-code').select(); document.execCommand('copy'); alert("🐗✨ 測驗代碼複製成功！"); });
+    document.getElementById('copy-url-btn').addEventListener('click', () => { document.getElementById('output-url').select(); document.execCommand('copy'); alert("🐗✨ 專屬網址複製成功！快傳給朋友吧！"); });
 
     createQuestionCard(); // 預設一題
 </script>
