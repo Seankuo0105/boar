@@ -37,14 +37,13 @@
         .result-area { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #e5e5e5; display: none; }
         .result-area.show { display: block; }
         .result-area textarea { background-color: #f7f7f7; word-break: break-all; }
-        .hint { font-size: 12px; color: #afafaf; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🐗🔨 噗嚕！山豬測驗兵工廠</h1>
-    <p class="subtitle">支援版權防禦、密碼鎖、全題型附圖、匯入編輯！</p>
+    <p class="subtitle">穩定修復版！支援版權防禦、密碼鎖、全題型附圖、匯入編輯！</p>
 
     <div class="import-group">
         <h3>📥 載入已有測驗</h3>
@@ -82,8 +81,7 @@
 </div>
 
 <script>
-    let qCount = 0;
-
+    // --- 圖片壓縮工具 ---
     function compressImage(file, callback) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -101,11 +99,11 @@
         reader.readAsDataURL(file);
     }
 
-    function handleCommonImage(input, id) {
+    function handleCommonImage(input, cardDiv) {
         const file = input.files[0]; if(!file) return;
         compressImage(file, (base64) => {
-            document.getElementById(`cimg-data-${id}`).value = base64;
-            const preview = document.getElementById(`cimg-preview-${id}`);
+            cardDiv.querySelector('.q-cimg-data').value = base64;
+            const preview = cardDiv.querySelector('.cimg-preview');
             preview.src = base64; preview.style.display = 'block';
         });
     }
@@ -116,51 +114,55 @@
         });
     }
 
+    // --- 創建卡片 (核心重寫：避免全域變數衝突) ---
     function createQuestionCard() {
-        qCount++; const id = qCount;
-        const div = document.createElement('div'); div.className = 'q-card'; div.id = `q-card-${id}`;
+        const div = document.createElement('div'); 
+        div.className = 'q-card';
         
         div.innerHTML = `
             <div class="q-card-header">
                 <h3 class="q-title-display">第 題 🐗</h3>
                 <div>
-                    <select class="type-select" onchange="changeType(this, ${id})">
-                        <option value="mc">📝 選擇題 (不限選項)</option><option value="tf">⭕ 是非題</option>
-                        <option value="input">⌨️ 手打/填空題</option><option value="order">🔢 排序題</option>
-                        <option value="match">🔗 配對題</option><option value="pos">📍 位置題 (圖片點擊)</option>
+                    <select class="type-select">
+                        <option value="mc">📝 選擇題 (不限選項)</option>
+                        <option value="tf">⭕ 是非題</option>
+                        <option value="input">⌨️ 手打/填空題</option>
+                        <option value="order">🔢 排序題</option>
+                        <option value="match">🔗 配對題</option>
+                        <option value="pos">📍 位置題 (圖片點擊)</option>
                     </select>
-                    <button class="remove-btn" onclick="removeCard(${id})">刪除</button>
+                    <button class="remove-btn">刪除</button>
                 </div>
             </div>
             <div class="input-group">
                 <label>題目內容</label>
                 <input type="text" class="q-text" placeholder="輸入題目...">
             </div>
-            <div class="input-group" id="cimg-group-${id}">
+            <div class="input-group cimg-group">
                 <label>🖼️ 附加圖片 (選填，位置題除外)</label>
-                <input type="file" accept="image/*" onchange="handleCommonImage(this, ${id})">
-                <img id="cimg-preview-${id}" style="max-width:100%; display:none; margin-top:10px; border-radius:10px;">
-                <input type="hidden" id="cimg-data-${id}" class="q-cimg-data">
+                <input type="file" accept="image/*" class="cimg-file">
+                <img class="cimg-preview" style="max-width:100%; display:none; margin-top:10px; border-radius:10px;">
+                <input type="hidden" class="q-cimg-data">
             </div>
-            <div id="fields-${id}" class="dynamic-fields"></div>
+            <div class="dynamic-fields"></div>
         `;
+
+        // 綁定事件 (獨立作用域，絕不衝突)
+        div.querySelector('.type-select').addEventListener('change', function() { changeType(this.value, div); });
+        div.querySelector('.remove-btn').addEventListener('click', function() { div.remove(); updateQuestionNumbers(); });
+        div.querySelector('.cimg-file').addEventListener('change', function() { handleCommonImage(this, div); });
+
         document.getElementById('questions-list').appendChild(div);
-        changeType(div.querySelector('.type-select'), id);
+        changeType('mc', div);
         updateQuestionNumbers();
-        return id;
+        return div;
     }
 
-    function removeCard(id) {
-        const card = document.getElementById(`q-card-${id}`);
-        if(card) { card.remove(); updateQuestionNumbers(); }
-    }
-
-    function changeType(selectEl, id) {
-        const type = selectEl.value;
-        const fieldsDiv = document.getElementById(`fields-${id}`);
-        const cimgGroup = document.getElementById(`cimg-group-${id}`);
+    // --- 切換題型介面 ---
+    function changeType(type, cardDiv) {
+        const fieldsDiv = cardDiv.querySelector('.dynamic-fields');
+        const cimgGroup = cardDiv.querySelector('.cimg-group');
         
-        // 位置題隱藏通用圖片區，其他題型顯示
         if (type === 'pos') cimgGroup.style.display = 'none';
         else cimgGroup.style.display = 'flex';
         
@@ -188,7 +190,7 @@
             const dataInp = fieldsDiv.querySelector('.q-pos-data'); const rectInp = fieldsDiv.querySelector('.q-pos-rect');
             let imgObj = null;
 
-            fileInput.onchange = (e) => {
+            fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0]; if(!file) return;
                 compressImage(file, (base64) => {
                     dataInp.value = base64; imgObj = new Image();
@@ -198,7 +200,7 @@
                     };
                     imgObj.src = base64;
                 });
-            };
+            });
 
             let isDraw = false, sX, sY;
             const getP = (e) => { const r = cvs.getBoundingClientRect(); const cx = e.clientX || (e.touches && e.touches[0].clientX); const cy = e.clientY || (e.touches && e.touches[0].clientY); return { x: cx - r.left, y: cy - r.top }; };
@@ -218,34 +220,36 @@
         }
     }
 
-    // 匯入功能
+    // --- 事件綁定：新增題目 ---
+    document.getElementById('add-q-btn').addEventListener('click', createQuestionCard);
+
+    // --- 事件綁定：載入測驗 ---
     document.getElementById('import-btn').addEventListener('click', () => {
         const code = document.getElementById('import-code').value.trim();
         if(!code) return alert("噗嚕！請先貼上代碼喔！🐗💦");
         try {
             const parsed = JSON.parse(decodeURIComponent(atob(code)));
-            const quizData = Array.isArray(parsed) ? { title: "匯入的測驗", qs: parsed } : parsed;
+            const qData = Array.isArray(parsed) ? { title: "匯入的測驗", qs: parsed } : parsed;
             
-            if (quizData.password) {
+            if (qData.password) {
                 const inputPass = prompt("🔒 這個測驗有加密防禦喔！請輸入密碼：");
-                if (inputPass !== quizData.password) return alert("哼哧！密碼錯誤！本山豬不給你改！🐗💦");
+                if (inputPass !== qData.password) return alert("哼哧！密碼錯誤！本山豬不給你改！🐗💦");
             }
 
-            document.getElementById('quiz-title').value = quizData.title || "";
-            document.getElementById('quiz-author').value = quizData.author || "";
-            document.getElementById('quiz-password').value = quizData.password || "";
-            document.getElementById('questions-list').innerHTML = ''; qCount = 0;
+            document.getElementById('quiz-title').value = qData.title || "";
+            document.getElementById('quiz-author').value = qData.author || "";
+            document.getElementById('quiz-password').value = qData.password || "";
+            document.getElementById('questions-list').innerHTML = '';
 
-            quizData.qs.forEach(q => {
-                const cId = createQuestionCard();
-                const card = document.getElementById(`q-card-${cId}`);
+            qData.qs.forEach(q => {
+                const card = createQuestionCard();
                 card.querySelector('.q-text').value = q.q;
                 card.querySelector('.type-select').value = q.t;
-                changeType(card.querySelector('.type-select'), cId);
+                changeType(q.t, card);
                 
                 if (q.cImg) {
-                    document.getElementById(`cimg-data-${cId}`).value = q.cImg;
-                    const preview = document.getElementById(`cimg-preview-${cId}`);
+                    card.querySelector('.q-cimg-data').value = q.cImg;
+                    const preview = card.querySelector('.cimg-preview');
                     preview.src = q.cImg; preview.style.display = 'block';
                 }
 
@@ -279,6 +283,7 @@
         } catch(e) { alert("哼哧！代碼壞掉了，無法載入喔！🐗💦"); console.error(e); }
     });
 
+    // --- 事件綁定：生成代碼 ---
     document.getElementById('generate-btn').addEventListener('click', () => {
         const title = document.getElementById('quiz-title').value.trim() || "山豬的終極特訓 🐗";
         const author = document.getElementById('quiz-author').value.trim();
@@ -338,9 +343,11 @@
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
+    // --- 複製按鈕 ---
     document.getElementById('copy-btn').addEventListener('click', () => { document.getElementById('output-code').select(); document.execCommand('copy'); alert("🐗✨ 測驗代碼複製成功！"); });
     document.getElementById('copy-url-btn').addEventListener('click', () => { document.getElementById('output-url').select(); document.execCommand('copy'); alert("🐗✨ 專屬網址複製成功！快傳給朋友吧！"); });
 
+    // --- 初始啟動 ---
     createQuestionCard();
 </script>
 </body>
