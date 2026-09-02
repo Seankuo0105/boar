@@ -24,6 +24,7 @@
         #draw-pad { border: 2px dashed #e5e5e5; border-radius: 10px; background-color: #fafafa; width: 100%; height: 150px; cursor: crosshair; touch-action: none; }
         
         .quiz-header { padding: 0 20px; text-align: center; font-size: 18px; font-weight: bold; color: #afafaf; margin-bottom: -10px; }
+        .author-text { font-size: 14px; color: #1cb0f6; display: block; margin-top: 5px; }
         .question-container { padding: 0 20px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .question-title { font-size: 22px; font-weight: 800; margin: 20px 0; }
         
@@ -113,7 +114,7 @@
     const correctAudio = new Audio('https://seankuo0105.github.io/boar/✅.m4a');
     const wrongAudio = new Audio('https://seankuo0105.github.io/boar/❌.m4a');
 
-    let quizData = { title: "", qs: [] };
+    let quizData = { title: "", author: "", qs: [] };
     let currentRoundQs = [];
     let nextRoundQs = [];
     let currentQuestionIndex = 0;
@@ -128,7 +129,6 @@
     let matchPairs = {};
     let activeMatchLeft = null;
 
-    // 畫板邏輯
     const canvas = document.getElementById('draw-pad');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
@@ -186,7 +186,7 @@
         try {
             const jsonStr = decodeURIComponent(atob(codeBase64));
             const parsed = JSON.parse(jsonStr);
-            quizData = Array.isArray(parsed) ? { title: "山豬特訓營 🐗", qs: parsed.map(q => ({ t: 'mc', q: q.q, a: q.a, w: q.w || [] })) } : parsed;
+            quizData = Array.isArray(parsed) ? { title: "山豬特訓營 🐗", author: "", qs: parsed.map(q => ({ t: 'mc', q: q.q, a: q.a, w: q.w || [] })) } : parsed;
             
             if (!quizData.qs || quizData.qs.length === 0) throw new Error("無題目");
             
@@ -200,7 +200,11 @@
             startTime = new Date();
             
             document.title = quizData.title || "山豬特訓營 🐗";
-            document.getElementById('quiz-header').textContent = quizData.title || "山豬特訓營 🐗";
+            let headerText = quizData.title || "山豬特訓營 🐗";
+            if (quizData.author) {
+                headerText += `<span class="author-text">🛡️ 創作者：${quizData.author}</span>`;
+            }
+            document.getElementById('quiz-header').innerHTML = headerText;
             
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
@@ -236,6 +240,16 @@
         area.innerHTML = '';
         selectedAnswer = null; orderTarget = []; matchPairs = {}; activeMatchLeft = null;
         state = "question";
+
+        // 如果題目有通用圖片
+        if (qData.cImg && qData.t !== 'pos') {
+            const imgEl = document.createElement('img');
+            imgEl.src = qData.cImg;
+            imgEl.style.maxWidth = '100%';
+            imgEl.style.borderRadius = '10px';
+            imgEl.style.marginBottom = '15px';
+            area.appendChild(imgEl);
+        }
 
         if (qData.t === 'mc' || qData.t === 'tf') {
             const options = qData.t === 'tf' ? ['O', 'X'] : shuffle([qData.a, ...qData.w]);
@@ -295,7 +309,7 @@
             imgWrapper.style.position = 'relative'; imgWrapper.style.display = 'inline-block'; imgWrapper.style.width = '100%';
             
             const img = document.createElement('img');
-            img.src = qData.img; img.style.width = '100%'; img.style.display = 'block'; img.style.cursor = 'crosshair';
+            img.src = qData.img; img.style.width = '100%'; img.style.display = 'block'; img.style.cursor = 'crosshair'; img.style.borderRadius = '10px';
             
             const marker = document.createElement('div');
             marker.style.position = 'absolute'; marker.style.width = '20px'; marker.style.height = '20px';
@@ -362,7 +376,7 @@
             if (currentQuestionIndex >= currentRoundQs.length) {
                 if (nextRoundQs.length > 0) {
                     currentRoundQs = nextRoundQs; nextRoundQs = []; currentQuestionIndex = 0;
-                    generateQuestion(); // 開始下一輪錯題
+                    generateQuestion();
                 } else {
                     const timeSec = Math.floor((new Date() - startTime) / 1000);
                     const timeStr = `${Math.floor(timeSec / 60)} 分 ${timeSec % 60} 秒`;
