@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首頁</title>
+    <style>
+        body { font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ffffff; color: #4b4b4b; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; overflow-x: hidden; }
+        #app { width: 100%; max-width: 600px; display: flex; flex-direction: column; flex-grow: 1; position: relative; }
+        
+        #start-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center; }
+        #start-screen h1 { color: #58cc02; font-size: 28px; margin-bottom: 10px; }
+        .code-input { width: 80%; padding: 15px; border: 2px solid #e5e5e5; border-radius: 16px; font-size: 16px; margin-bottom: 20px; outline: none; }
+        
+        .header { display: flex; align-items: center; padding: 15px 20px; gap: 15px; }
+        .close-btn { color: #afafaf; font-size: 24px; cursor: pointer; font-weight: bold; }
+        .progress-bar-container { flex-grow: 1; background-color: #e5e5e5; border-radius: 10px; height: 16px; overflow: hidden; }
+        .progress-bar { background-color: #58cc02; height: 100%; width: 0%; border-radius: 10px; transition: 0.3s; }
+        .progress-bar.streak-5 { background-color: #ff9600; }
+        .progress-bar.streak-10 { background-color: #1cb0f6; }
+        .tool-btn { background: none; border: none; font-size: 24px; cursor: pointer; }
+
+        #canvas-container { display: none; padding: 0 20px; margin-bottom: 10px; }
+        #draw-pad { border: 2px dashed #e5e5e5; border-radius: 10px; background-color: #fafafa; width: 100%; height: 150px; cursor: crosshair; touch-action: none; }
+        
+        .quiz-header { padding: 0 20px; text-align: center; font-size: 18px; font-weight: bold; color: #afafaf; margin-bottom: -10px; }
+        .author-text { font-size: 14px; color: #1cb0f6; display: block; margin-top: 5px; }
+        .question-container { padding: 0 20px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .question-title { font-size: 22px; font-weight: 800; margin: 20px 0; }
+        
+        .options-grid { display: flex; flex-direction: column; gap: 12px; }
+        .option-btn { background-color: #ffffff; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 16px; padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; text-align: left; transition: 0.1s; color: #4b4b4b; }
+        .option-btn.selected { border-color: #84d8ff; background-color: #ddf4ff; color: #1cb0f6; }
+        .option-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
+
+        .text-input { width: 100%; padding: 15px; border: 2px solid #e5e5e5; border-radius: 16px; font-size: 18px; outline: none; box-sizing: border-box; font-weight: bold; }
+        .text-input:focus { border-color: #84d8ff; background-color: #ddf4ff; }
+
+        .order-target { min-height: 60px; border: 2px dashed #e5e5e5; border-radius: 16px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background-color: #f7f7f7; }
+        .order-source { display: flex; flex-wrap: wrap; gap: 10px; }
+        .order-item { background-color: #ffffff; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 12px; padding: 10px 15px; font-weight: bold; cursor: pointer; user-select: none; }
+        .order-item:active { border-bottom-width: 2px; transform: translateY(2px); }
+
+        .match-container { display: flex; gap: 10px; }
+        .match-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .match-btn { background-color: #ffffff; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: bold; cursor: pointer; text-align: center; }
+        .match-btn.active-click { border-color: #4b4b4b; background-color: #f0f0f0; }
+        
+        .footer { padding: 20px; border-top: 2px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; }
+        .footer.correct { background-color: #d7ffb8; border-top-color: #d7ffb8; }
+        .footer.incorrect { background-color: #ffdfe0; border-top-color: #ffdfe0; }
+        .feedback-message { display: none; flex-direction: column; }
+        .feedback-message.show { display: flex; }
+        .feedback-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; }
+        .correct .feedback-title { color: #58a700; }
+        .incorrect .feedback-title { color: #ea2b2b; }
+        .feedback-answer { font-size: 16px; color: #ea2b2b; font-weight: bold; }
+
+        .action-btn { background-color: #e5e5e5; color: #afafaf; border: none; border-radius: 16px; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-bottom: 4px solid #cecece; }
+        .action-btn.active { background-color: #58cc02; color: white; border-bottom-color: #58a700; }
+        .correct .action-btn.active { background-color: #58cc02; border-bottom-color: #58a700; }
+        .incorrect .action-btn.active { background-color: #ff4b4b; border-bottom-color: #ea2b2b; }
+        
+        .hidden { display: none !important; }
+        .end-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+        .end-screen h1 { color: #ffc800; font-size: 32px; margin-bottom: 10px; }
+        .end-stats { font-size: 18px; color: #afafaf; font-weight: bold; line-height: 1.6; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="start-screen">
+        <h1>自動載入中... 🐗💨</h1>
+        <p style="color: #afafaf;">正在為您準備特訓，請稍後！</p>
+        <textarea id="code-input" class="code-input hidden" rows="4"></textarea>
+        <button class="action-btn active hidden" id="start-btn">開始特訓</button>
+    </div>
+
+    <div id="game-container" class="hidden" style="display: flex; flex-direction: column; flex-grow: 1;">
+        <div class="quiz-header" id="quiz-header">山豬特訓營</div>
+        <div class="header" id="header">
+            <div class="close-btn" id="close-btn">X</div>
+            <div class="progress-bar-container"><div class="progress-bar" id="progress-bar"></div></div>
+            <button class="tool-btn" id="toggle-canvas-btn" title="打開畫板">🖍️</button>
+        </div>
+        
+        <div id="canvas-container">
+            <canvas id="draw-pad"></canvas>
+            <div style="text-align:right; margin-top:5px;"><button onclick="clearCanvas()" style="padding:5px 10px; border-radius:10px; border:1px solid #ccc; cursor:pointer;">清除畫板 🧼</button></div>
+        </div>
+
+        <div class="end-screen hidden" id="end-screen">
+            <h1>🐗💦 噗嚕！太神啦！</h1>
+            <div class="end-stats" id="end-stats"></div>
+            <button class="action-btn active" id="restart-btn">再來一次 🐗✨</button>
+        </div>
+
+        <div class="question-container" id="question-container">
+            <div class="question-title" id="question-text">載入中...</div>
+            <div id="interaction-area"></div>
+        </div>
+
+        <div class="footer" id="footer">
+            <div class="feedback-message" id="feedback-message">
+                <div class="feedback-title" id="feedback-title">正確！</div>
+                <div class="feedback-answer" id="feedback-answer"></div>
+            </div>
+            <button class="action-btn" id="check-btn" disabled>檢查</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const correctAudio = new Audio('https://seankuo0105.github.io/boar/✅.m4a');
+    const wrongAudio = new Audio('https://seankuo0105.github.io/boar/❌.m4a');
+
+    let quizData = { title: "", author: "", qs: [] };
+    let currentRoundQs = [];
+    let nextRoundQs = [];
+    let currentQuestionIndex = 0;
+    let originalTotal = 0;
+    let firstTryCorrect = 0;
+    let startTime = null;
+    let state = "question";
+    let streak = 0;
+    
+    let selectedAnswer = null;
+    let orderTarget = [];
+    let matchPairs = {};
+    let activeMatchLeft = null;
+
+    const canvas = document.getElementById('draw-pad');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    
+    function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth - 40; canvas.height = 150; }
+    window.addEventListener('resize', () => { if(!document.getElementById('canvas-container').classList.contains('hidden')) resizeCanvas(); });
+    
+    function startDraw(e) { isDrawing = true; draw(e); }
+    function stopDraw() { isDrawing = false; ctx.beginPath(); }
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#1cb0f6';
+        ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+    }
+    
+    canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive: false}); canvas.addEventListener('touchmove', draw, {passive: false}); canvas.addEventListener('touchend', stopDraw);
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    
+    document.getElementById('toggle-canvas-btn').addEventListener('click', () => {
+        const c = document.getElementById('canvas-container');
+        if(c.style.display === 'block') { c.style.display = 'none'; } else { c.style.display = 'block'; resizeCanvas(); }
+    });
+
+    // 啟動時自動抓取 code2.txt
+    window.onload = () => {
+        fetch('https://seankuo0105.github.io/boar/code2.txt')
+            .then(response => {
+                if (!response.ok) throw new Error('無法載入檔案');
+                return response.text();
+            })
+            .then(code => {
+                const cleanCode = code.trim();
+                if(cleanCode) {
+                    document.getElementById('code-input').value = cleanCode;
+                    loadGame(cleanCode);
+                } else {
+                    alert("噗嚕！自動載入的代碼是空的喔！🐗💦");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                document.getElementById('start-screen').innerHTML = '<h1>載入失敗 🐗💦</h1><p style="color: #ea2b2b;">請檢查 code2.txt 是否存在或有網路問題！</p>';
+            });
+    };
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        const code = document.getElementById('code-input').value.trim();
+        if(code) loadGame(code); else alert("噗嚕！代碼不能是空的喔！🐗💦");
+    });
+
+    document.getElementById('close-btn').addEventListener('click', () => {
+        location.reload(); // 自動載入版本，關閉直接重整頁面重新載入
+    });
+    document.getElementById('restart-btn').addEventListener('click', () => {
+        location.reload(); // 自動載入版本，結束後點擊重新載入
+    });
+
+    function loadGame(codeBase64) {
+        try {
+            const jsonStr = decodeURIComponent(atob(codeBase64));
+            const parsed = JSON.parse(jsonStr);
+            quizData = Array.isArray(parsed) ? { title: "山豬特訓營 🐗", author: "", qs: parsed.map(q => ({ t: 'mc', q: q.q, a: q.a, w: q.w || [] })) } : parsed;
+            
+            if (!quizData.qs || quizData.qs.length === 0) throw new Error("無題目");
+            
+            quizData.qs.forEach(q => q.hasTried = false);
+            currentRoundQs = shuffle([...quizData.qs]);
+            nextRoundQs = [];
+            currentQuestionIndex = 0;
+            originalTotal = quizData.qs.length;
+            firstTryCorrect = 0;
+            streak = 0;
+            startTime = new Date();
+            
+            document.title = quizData.title || "山豬特訓營 🐗";
+            let headerText = quizData.title || "山豬特訓營 🐗";
+            if (quizData.author) {
+                headerText += `<span class="author-text">🛡️ 創作者：${quizData.author}</span>`;
+            }
+            document.getElementById('quiz-header').innerHTML = headerText;
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            updateProgressBar();
+            
+            generateQuestion();
+        } catch (e) { alert("哼哧！代碼壞掉了啦！請檢查 code2.txt 內容是否正確！🐗💦"); console.error(e); }
+    }
+
+    function updateProgressBar() {
+        const bar = document.getElementById('progress-bar');
+        bar.className = 'progress-bar';
+        if (streak >= 10) bar.classList.add('streak-10');
+        else if (streak >= 5) bar.classList.add('streak-5');
+        
+        let solved = originalTotal - (currentRoundQs.length - currentQuestionIndex) - nextRoundQs.length;
+        bar.style.width = `${(solved / originalTotal) * 100}%`;
+    }
+
+    function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+    function enableCheck() { document.getElementById('check-btn').disabled = false; document.getElementById('check-btn').classList.add('active'); }
+
+    function generateQuestion() {
+        clearCanvas();
+        document.getElementById('footer').className = 'footer';
+        document.getElementById('feedback-message').classList.remove('show');
+        const checkBtn = document.getElementById('check-btn');
+        checkBtn.textContent = '檢查'; checkBtn.className = 'action-btn'; checkBtn.disabled = true;
+        
+        const qData = currentRoundQs[currentQuestionIndex];
+        document.getElementById('question-text').textContent = qData.q;
+        const area = document.getElementById('interaction-area');
+        area.innerHTML = '';
+        selectedAnswer = null; orderTarget = []; matchPairs = {}; activeMatchLeft = null;
+        state = "question";
+
+        if (qData.cImg && qData.t !== 'pos') {
+            const imgEl = document.createElement('img');
+            imgEl.src = qData.cImg;
+            imgEl.style.maxWidth = '100%';
+            imgEl.style.borderRadius = '10px';
+            imgEl.style.marginBottom = '15px';
+            area.appendChild(imgEl);
+        }
+
+        if (qData.t === 'mc' || qData.t === 'tf') {
+            const options = qData.t === 'tf' ? ['O', 'X'] : shuffle([qData.a, ...qData.w]);
+            const grid = document.createElement('div'); grid.className = 'options-grid';
+            options.forEach(opt => {
+                const btn = document.createElement('button'); btn.className = 'option-btn'; btn.textContent = opt;
+                btn.onclick = () => { grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedAnswer = opt; enableCheck(); };
+                grid.appendChild(btn);
+            });
+            area.appendChild(grid);
+        } else if (qData.t === 'input') {
+            const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'text-input'; inp.placeholder = "輸入答案...";
+            inp.oninput = () => { selectedAnswer = inp.value; if(inp.value.trim() !== '') enableCheck(); else checkBtn.disabled = true; };
+            area.appendChild(inp);
+        } else if (qData.t === 'order') {
+            const targetDiv = document.createElement('div'); targetDiv.className = 'order-target';
+            const sourceDiv = document.createElement('div'); sourceDiv.className = 'order-source';
+            const items = shuffle([...qData.a]);
+            const renderOrder = () => {
+                targetDiv.innerHTML = ''; sourceDiv.innerHTML = '';
+                orderTarget.forEach((txt, i) => { const el = document.createElement('div'); el.className = 'order-item'; el.textContent = txt; el.onclick = () => { orderTarget.splice(i, 1); items.push(txt); renderOrder(); }; targetDiv.appendChild(el); });
+                items.forEach((txt, i) => { const el = document.createElement('div'); el.className = 'order-item'; el.textContent = txt; el.onclick = () => { items.splice(i, 1); orderTarget.push(txt); renderOrder(); }; sourceDiv.appendChild(el); });
+                if(orderTarget.length > 0) enableCheck(); else { checkBtn.disabled = true; checkBtn.classList.remove('active'); }
+            };
+            renderOrder(); area.appendChild(targetDiv); area.appendChild(sourceDiv);
+        } else if (qData.t === 'match') {
+            const colors = ['#ff9600', '#1cb0f6', '#ce82ff', '#ff4b4b', '#58cc02', '#ffd900'];
+            const lefts = shuffle(qData.p.map(x => x.l)); const rights = shuffle(qData.p.map(x => x.r));
+            let colorIndex = 0;
+            const matchCont = document.createElement('div'); matchCont.className = 'match-container';
+            const leftCol = document.createElement('div'); leftCol.className = 'match-col';
+            const rightCol = document.createElement('div'); rightCol.className = 'match-col';
+            const renderMatch = () => {
+                leftCol.innerHTML = ''; rightCol.innerHTML = '';
+                lefts.forEach(l => {
+                    const btn = document.createElement('div'); btn.className = 'match-btn'; btn.textContent = l;
+                    if(matchPairs[l]) { btn.style.backgroundColor = matchPairs[l].c; btn.style.color = 'white'; btn.style.borderColor = matchPairs[l].c; } else if(activeMatchLeft === l) { btn.classList.add('active-click'); }
+                    btn.onclick = () => { if(matchPairs[l]) { delete matchPairs[l]; activeMatchLeft = l; } else { activeMatchLeft = l; } renderMatch(); };
+                    leftCol.appendChild(btn);
+                });
+                rights.forEach(r => {
+                    const btn = document.createElement('div'); btn.className = 'match-btn'; btn.textContent = r;
+                    const pairedLeft = Object.keys(matchPairs).find(k => matchPairs[k].r === r);
+                    if(pairedLeft) { btn.style.backgroundColor = matchPairs[pairedLeft].c; btn.style.color = 'white'; btn.style.borderColor = matchPairs[pairedLeft].c;}
+                    btn.onclick = () => {
+                        if(pairedLeft) delete matchPairs[pairedLeft];
+                        if(activeMatchLeft) { matchPairs[activeMatchLeft] = { r: r, c: colors[colorIndex % colors.length] }; colorIndex++; activeMatchLeft = null; }
+                        renderMatch();
+                        if(Object.keys(matchPairs).length === lefts.length) enableCheck(); else { checkBtn.disabled=true; checkBtn.classList.remove('active');}
+                    };
+                    rightCol.appendChild(btn);
+                });
+            };
+            renderMatch(); matchCont.appendChild(leftCol); matchCont.appendChild(rightCol); area.appendChild(matchCont);
+        } else if (qData.t === 'pos') {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.style.position = 'relative'; imgWrapper.style.display = 'inline-block'; imgWrapper.style.width = '100%';
+            
+            const img = document.createElement('img');
+            img.src = qData.img; img.style.width = '100%'; img.style.display = 'block'; img.style.cursor = 'crosshair'; img.style.borderRadius = '10px';
+            
+            const marker = document.createElement('div');
+            marker.style.position = 'absolute'; marker.style.width = '20px'; marker.style.height = '20px';
+            marker.style.backgroundColor = 'rgba(255, 0, 0, 0.5)'; marker.style.border = '2px solid red'; marker.style.borderRadius = '50%';
+            marker.style.transform = 'translate(-50%, -50%)'; marker.style.display = 'none';
+            
+            imgWrapper.appendChild(img); imgWrapper.appendChild(marker);
+            img.onclick = (e) => {
+                const rect = img.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                selectedAnswer = { x, y };
+                marker.style.left = x + '%'; marker.style.top = y + '%'; marker.style.display = 'block';
+                enableCheck();
+            };
+            area.appendChild(imgWrapper);
+        }
+    }
+
+    document.getElementById('check-btn').addEventListener('click', function() {
+        if (this.disabled) return;
+        if (state === "question") {
+            const qData = currentRoundQs[currentQuestionIndex];
+            let isCorrect = false;
+
+            if (qData.t === 'mc' || qData.t === 'tf') {
+                isCorrect = (selectedAnswer === qData.a);
+            } else if (qData.t === 'input') {
+                isCorrect = (selectedAnswer.trim().toLowerCase() === qData.a.trim().toLowerCase());
+            } else if (qData.t === 'order') {
+                isCorrect = JSON.stringify(orderTarget) === JSON.stringify(qData.a);
+            } else if (qData.t === 'match') {
+                isCorrect = true;
+                qData.p.forEach(pair => { if(!matchPairs[pair.l] || matchPairs[pair.l].r !== pair.r) isCorrect = false; });
+            } else if (qData.t === 'pos') {
+                let rx = Math.min(qData.rect.x, qData.rect.x + qData.rect.w);
+                let ry = Math.min(qData.rect.y, qData.rect.y + qData.rect.h);
+                let rw = Math.abs(qData.rect.w); let rh = Math.abs(qData.rect.h);
+                isCorrect = (selectedAnswer.x >= rx && selectedAnswer.x <= rx + rw && selectedAnswer.y >= ry && selectedAnswer.y <= ry + rh);
+            }
+
+            const footer = document.getElementById('footer');
+            const feedbackMsg = document.getElementById('feedback-message');
+            feedbackMsg.classList.add('show'); this.textContent = '繼續';
+
+            if (isCorrect) {
+                streak++; correctAudio.currentTime = 0; correctAudio.play();
+                if (!qData.hasTried) { firstTryCorrect++; }
+                footer.classList.add('correct');
+                document.getElementById('feedback-title').textContent = `太棒了！連勝 ${streak} 題！🐗✨`;
+                document.getElementById('feedback-answer').textContent = '';
+            } else {
+                streak = 0; wrongAudio.currentTime = 0; wrongAudio.play();
+                qData.hasTried = true;
+                nextRoundQs.push(qData);
+                footer.classList.add('incorrect');
+                document.getElementById('feedback-title').textContent = '喔不！連勝中斷了！噗嚕！🐗💦';
+                document.getElementById('feedback-answer').textContent = '這題將移到最後面讓你重新挑戰！';
+            }
+            state = "feedback";
+            updateProgressBar();
+        } else {
+            currentQuestionIndex++;
+            if (currentQuestionIndex >= currentRoundQs.length) {
+                if (nextRoundQs.length > 0) {
+                    currentRoundQs = nextRoundQs; nextRoundQs = []; currentQuestionIndex = 0;
+                    generateQuestion();
+                } else {
+                    const timeSec = Math.floor((new Date() - startTime) / 1000);
+                    const timeStr = `${Math.floor(timeSec / 60)} 分 ${timeSec % 60} 秒`;
+                    const acc = Math.round((firstTryCorrect / originalTotal) * 100);
+                    
+                    document.getElementById('header').classList.add('hidden');
+                    document.getElementById('canvas-container').style.display = 'none';
+                    document.getElementById('question-container').classList.add('hidden');
+                    document.getElementById('footer').classList.add('hidden');
+                    document.getElementById('end-stats').innerHTML = `⏱️ 花費時間：${timeStr}<br>🎯 一發命中率：${acc}%`;
+                    document.getElementById('end-screen').classList.remove('hidden');
+                }
+            } else { generateQuestion(); }
+        }
+    });
+</script>
+</body>
+</html>
