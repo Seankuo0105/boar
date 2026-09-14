@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山豬的螢幕錄影機升級版 🐗✨</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #fdf6e3;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #8b4513;
+            color: white;
+            transition: 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #a0522d;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #pauseBtn {
+            background-color: #d2691e;
+        }
+        video {
+            margin-top: 20px;
+            width: 80%;
+            max-width: 600px;
+            border: 5px solid #8b4513;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>哼哧！山豬超級螢幕錄影機 🐗🎥</h1>
+    
+    <button id="startBtn">🔴 開始錄製 (哼哧!)</button>
+    <button id="pauseBtn" disabled>⏸️ 暫停錄製 (噗嚕!)</button>
+    <button id="stopBtn" disabled>⏹️ 停止並存檔 (🐗💨)</button>
+    <br>
+    <a id="downloadLink" style="display: none;">
+        <button id="downloadBtn">⬇️ 下載影片 (🍠✨)</button>
+    </a>
+    <br>
+    <video id="preview" autoplay muted></video>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const preview = document.getElementById('preview');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                // 哼哧！抓取螢幕畫面
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true
+                });
+
+                preview.srcObject = stream;
+                mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = function() {
+                    // 錄影結束，把地瓜...啊不是，把影片包裝起來！🐗🍠
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    downloadLink.href = url;
+                    downloadLink.download = 'boar-super-record.webm';
+                    downloadLink.style.display = 'inline';
+
+                    // 關閉螢幕分享的軌道
+                    stream.getTracks().forEach(track => track.stop());
+                    preview.srcObject = null;
+                };
+
+                // 開始錄製！
+                mediaRecorder.start();
+
+                // 切換按鈕狀態噗嚕
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                pauseBtn.innerHTML = '⏸️ 暫停錄製 (噗嚕!)';
+                downloadLink.style.display = 'none';
+
+            } catch (err) {
+                console.error("哎呀！抓不到螢幕畫面噗嚕：", err);
+                alert("哼哧！請允許分享螢幕畫面才能錄影喔！🐗💦");
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (mediaRecorder.state === 'recording') {
+                // 如果正在錄，就暫停！哼哧！
+                mediaRecorder.pause();
+                pauseBtn.innerHTML = '▶️ 繼續錄製 (🐗✨)';
+            } else if (mediaRecorder.state === 'paused') {
+                // 如果暫停中，就繼續！噗嚕！
+                mediaRecorder.resume();
+                pauseBtn.innerHTML = '⏸️ 暫停錄製 (噗嚕!)';
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            // 停止錄影！
+            mediaRecorder.stop();
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+        });
+    </script>
+
+</body>
+</html>
