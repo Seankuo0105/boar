@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哼哧！生日快樂大螢幕 🐗🎂</title>
+    <style>
+        /* 🐗 基本樣式設定 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 🐗 設定畫面 */
+        #setup-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            color: #333;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        h1 { margin-top: 0; color: #ff6b81; }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="file"], input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button.start-btn {
+            background-color: #ff6b81;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            width: 100%;
+        }
+
+        button.start-btn:hover {
+            background-color: #ff4757;
+            transform: scale(1.05);
+        }
+
+        /* 🐗 播放畫面 */
+        #slideshow-screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            position: relative;
+        }
+
+        #photo-container {
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* 🐗 右下角小按鈕介面 */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            opacity: 0.1; /* 平常很透明才不會干擾畫面 */
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        #controls:hover {
+            opacity: 1; /* 滑鼠移過去才會看清楚 */
+        }
+
+        .ctrl-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+        }
+
+        /* YouTube 隱藏播放器 */
+        #yt-player-container {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+        }
+
+        /* 隱藏全螢幕按鈕的 class */
+        .hide-btn {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🐗 設定畫面 -->
+    <div id="setup-screen">
+        <div class="card">
+            <h1>🎉 生日大屏播放設定 🐗</h1>
+            
+            <div class="input-group">
+                <label>1. 上傳照片 (可多選) 📸</label>
+                <input type="file" id="photoInput" accept="image/*" multiple>
+            </div>
+
+            <div class="input-group">
+                <label>2. YouTube 音樂連結 🎵</label>
+                <input type="text" id="ytInput" placeholder="例如: https://www.youtube.com/watch?v=...">
+            </div>
+
+            <div class="input-group">
+                <label>3. 每張照片停留秒數 ⏱️</label>
+                <input type="number" id="secInput" value="5" min="1">
+            </div>
+
+            <button class="start-btn" id="startBtn">繼續 (開始播放) 🚀</button>
+        </div>
+    </div>
+
+    <!-- 🐗 播放畫面 -->
+    <div id="slideshow-screen">
+        <div id="photo-container"></div>
+        
+        <div id="controls">
+            <button class="ctrl-btn" id="btn-black">黑屏</button>
+            <button class="ctrl-btn" id="btn-restore">回復</button>
+            <button class="ctrl-btn" id="btn-fullscreen">全螢幕</button>
+        </div>
+        
+        <!-- 放 YouTube iframe 的地方 -->
+        <div id="yt-player-container"><div id="player"></div></div>
+    </div>
+
+    <!-- 載入 YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        let ytReady = false;
+        let images = [];
+        let currentIndex = 0;
+        let slideshowInterval;
+        let isBlackScreen = false;
+
+        // 當 YouTube API 準備好時 🐗
+        function onYouTubeIframeAPIReady() {
+            ytReady = true;
+        }
+
+        // 解析 YouTube ID 🐽
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // DOM 元素們 🐾
+        const setupScreen = document.getElementById('setup-screen');
+        const slideshowScreen = document.getElementById('slideshow-screen');
+        const photoInput = document.getElementById('photoInput');
+        const ytInput = document.getElementById('ytInput');
+        const secInput = document.getElementById('secInput');
+        const startBtn = document.getElementById('startBtn');
+        const photoContainer = document.getElementById('photo-container');
+        
+        const btnBlack = document.getElementById('btn-black');
+        const btnRestore = document.getElementById('btn-restore');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+
+        // 讀取照片檔案 🐗💨
+        photoInput.addEventListener('change', (e) => {
+            images = [];
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                images.push(URL.createObjectURL(files[i]));
+            }
+        });
+
+        // 啟動按鈕！噗嚕！🚀
+        startBtn.addEventListener('click', () => {
+            if (images.length === 0) {
+                alert("哼哧！請至少上傳一張照片啦！🐗💦");
+                return;
+            }
+
+            const ytUrl = ytInput.value;
+            const ytID = getYouTubeID(ytUrl);
+            const seconds = parseInt(secInput.value) * 1000;
+
+            // 切換畫面
+            setupScreen.style.display = 'none';
+            slideshowScreen.style.display = 'block';
+
+            // 進入全螢幕
+            if (slideshowScreen.requestFullscreen) {
+                slideshowScreen.requestFullscreen();
+            }
+
+            // 處理 YouTube 音樂播放 🎵
+            if (ytID && ytReady) {
+                if(player) {
+                    player.loadVideoById(ytID);
+                } else {
+                    player = new YT.Player('player', {
+                        height: '0',
+                        width: '0',
+                        videoId: ytID,
+                        playerVars: {
+                            'autoplay': 1,
+                            'loop': 1,
+                            'playlist': ytID // loop 需要 playlist
+                        },
+                        events: {
+                            'onReady': (event) => { event.target.playVideo(); }
+                        }
+                    });
+                }
+            }
+
+            // 開始輪播照片 🖼️
+            currentIndex = 0;
+            photoContainer.style.backgroundImage = `url(${images[currentIndex]})`;
+            
+            clearInterval(slideshowInterval);
+            slideshowInterval = setInterval(() => {
+                if (!isBlackScreen) {
+                    currentIndex = (currentIndex + 1) % images.length;
+                    photoContainer.style.backgroundImage = `url(${images[currentIndex]})`;
+                }
+            }, seconds);
+        });
+
+        // 🐗 黑屏按鈕：變黑且音樂暫停
+        btnBlack.addEventListener('click', () => {
+            isBlackScreen = true;
+            photoContainer.style.opacity = '0'; // 圖片藏起來變黑屏
+            if (player && typeof player.pauseVideo === 'function') {
+                player.pauseVideo();
+            }
+        });
+
+        // 🐗 回復按鈕：恢復畫面與音樂
+        btnRestore.addEventListener('click', () => {
+            isBlackScreen = false;
+            photoContainer.style.opacity = '1';
+            if (player && typeof player.playVideo === 'function') {
+                player.playVideo();
+            }
+        });
+
+        // 🐗 全螢幕按鈕
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            }
+        });
+
+        // 監聽全螢幕狀態，如果在全螢幕就把「全螢幕」按鈕藏起來 🐽
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                btnFullscreen.classList.add('hide-btn');
+            } else {
+                btnFullscreen.classList.remove('hide-btn');
+            }
+        });
+    </script>
+</body>
+</html>
