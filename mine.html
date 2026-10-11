@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Endless Boar Minesweeper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .mode-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mode-btn.active {
+            background-color: #3b82f6; 
+            color: white;
+            border-color: #60a5fa;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        #hire-boar-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.8);
+        }
+        
+        #hire-boar-btn:active:not(:disabled) {
+            transform: scale(0.92);
+        }
+        
+        .highlight-pulse {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            z-index: 50;
+            position: relative;
+        }
+        
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="fixed top-0 left-0 right-0 z-10 pointer-events-none p-2 flex flex-col items-center gap-2 w-full">
+        
+        <div class="flex flex-wrap justify-center gap-2 w-full max-w-4xl">
+            
+            <div class="glass-panel px-3 py-1.5 rounded-lg flex gap-4 items-center pointer-events-auto text-sm font-bold">
+                <div class="flex items-center gap-1">
+                    <span class="text-slate-400">Score:</span>
+                    <span id="score-display" class="text-blue-400">0</span>
+                </div>
+                <div class="w-px h-4 bg-slate-700"></div>
+                <div class="flex items-center gap-1 text-yellow-400">
+                    <span>💰</span>
+                    <span id="coins-display">0</span>
+                </div>
+                <div class="w-px h-4 bg-slate-700"></div>
+                <div class="flex items-center gap-1 text-red-500 tracking-widest text-xs" id="hp-display">
+                    ❤️❤️❤️❤️🖤
+                </div>
+            </div>
+
+            <div class="glass-panel flex p-1 rounded-lg gap-1 pointer-events-auto text-sm">
+                <button id="mode-pan" class="mode-btn active px-3 py-1 rounded font-bold flex items-center gap-1 text-slate-300 hover:bg-slate-800">
+                    <span>✋</span> 滑動
+                </button>
+                <button id="mode-dig" class="mode-btn px-3 py-1 rounded font-bold flex items-center gap-1 text-slate-300 hover:bg-slate-800">
+                    <span>⛏️</span> 踩下
+                </button>
+                <button id="mode-flag" class="mode-btn px-3 py-1 rounded font-bold flex items-center gap-1 text-slate-300 hover:bg-slate-800">
+                    <span>🚩</span> 標記
+                </button>
+            </div>
+
+            <div class="glass-panel px-3 py-1 rounded-lg flex items-center gap-3 pointer-events-auto text-sm">
+                <button id="hire-boar-btn" disabled class="flex items-center gap-2 bg-emerald-900/40 border border-emerald-500/40 px-3 py-1.5 rounded hover:border-emerald-400 transition-colors shadow">
+                    <span>🐗</span>
+                    <span class="font-bold text-emerald-400">雇用 (50💰)</span>
+                    <span class="bg-slate-900 px-2 py-0.5 rounded text-xs" id="boar-count">0</span>
+                </button>
+                <div class="flex items-center gap-1.5">
+                    <input type="checkbox" id="auto-hire-checkbox" class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600">
+                    <label for="auto-hire-checkbox" class="font-bold text-slate-300 cursor-pointer select-none">自動雇用</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutorial-overlay" class="fixed top-14 right-4 z-20 pointer-events-none transition-opacity duration-300 opacity-100">
+        <div class="glass-panel text-white px-4 py-3 rounded-xl flex items-start gap-3 max-w-[280px] shadow-2xl border-blue-500/50 border">
+            <span class="text-2xl mt-1" id="tutorial-icon">✨</span>
+            <div class="flex flex-col">
+                <span class="text-sm font-bold text-blue-200" id="tutorial-text">歡迎來到野豬特攻隊！</span>
+                <span class="text-xs text-slate-300 mt-1" id="tutorial-subtext">請切換到「⛏️ 踩下」模式，點擊畫面中央的格子開始擴張領土！（第一下絕對安全）</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center z-50 pointer-events-auto transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="text-6xl mb-4">💀</div>
+            <h2 class="text-3xl font-black mb-2 text-white tracking-widest">遊戲結束</h2>
+            <div class="bg-slate-800 rounded-xl p-4 mb-6 border border-slate-700">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">最終分數</p>
+                <p id="final-score" class="text-4xl text-blue-400 font-black">0</p>
+            </div>
+            <button id="restart-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-all text-sm shadow uppercase">
+                再玩一次
+            </button>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game Settings
+        const CELL_SIZE = 44;
+        const MINE_CHANCE = 0.16;
+        const HEART_CHANCE = 0.01;
+        const COIN_CHANCE = 0.50; // 50% drop rate requested
+        
+        const MAX_HP = 5;
+        const BOAR_COST = 50;
+        const FAINT_DURATION = 10000;
+        
+        const MAX_DIGS_PER_FRAME = 60; // For Async chunking
+        const BOAR_SCAN_RADIUS = 10; 
+
+        // Cell States
+        const ST_HIDDEN = 0;
+        const ST_REVEALED = 1;
+        const ST_FLAGGED = 2;
+        const ST_IN_QUEUE = 3; 
+
+        // Content Types
+        const TYPE_EMPTY = 0;
+        const TYPE_MINE = 1;
+        const TYPE_HEART = 2; 
+
+        let state = {
+            mode: 'pan',
+            hp: 4, 
+            score: 0,
+            coins: 0,
+            cameraX: 0,
+            cameraY: 0,
+            isGameOver: false,
+            firstClick: true,
+            lastTime: performance.now(),
+            tutPhase: 0 
+        };
+
+        let cellStates = new Map(); 
+        let safeZones = new Set();  
+        let loots = []; 
+        let boars = []; 
+        let nextLootId = 0;
+        let nextBoarId = 0;
+        let pendingDigs = []; 
+        
+        // GLOBAL BOAR RESERVATIONS (Fix for AI Race Condition)
+        const globalBoarReservations = new Map();
+
+        const scoreEl = document.getElementById('score-display');
+        const coinsEl = document.getElementById('coins-display');
+        const hpEl = document.getElementById('hp-display');
+        const boarCountEl = document.getElementById('boar-count');
+        const hireBoarBtn = document.getElementById('hire-boar-btn');
+        const autoHireCheckbox = document.getElementById('auto-hire-checkbox');
+        
+        const tutOverlay = document.getElementById('tutorial-overlay');
+        const tutIcon = document.getElementById('tutorial-icon');
+        const tutText = document.getElementById('tutorial-text');
+        const tutSubtext = document.getElementById('tutorial-subtext');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        function hashCoord(x, y) {
+            let h = Math.imul(x ^ 0x55555555, 0x517cc1b7);
+            h ^= Math.imul(y ^ 0xaaaaaaaa, 0x19a229d3);
+            h ^= (h >>> 16);
+            h = Math.imul(h, 0xca6b);
+            h ^= (h >>> 16);
+            return (h >>> 0) / 4294967296;
+        }
+
+        function getCellContent(x, y) {
+            if (safeZones.has(`${x},${y}`)) return TYPE_EMPTY;
+            const rand = hashCoord(x, y);
+            if (rand < MINE_CHANCE) return TYPE_MINE;
+            if (rand < MINE_CHANCE + HEART_CHANCE) return TYPE_HEART;
+            return TYPE_EMPTY;
+        }
+
+        function getAdjacentMines(x, y) {
+            let count = 0;
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    if (dx === 0 && dy === 0) continue;
+                    if (getCellContent(x + dx, y + dy) === TYPE_MINE) count++;
+                }
+            }
+            return count;
+        }
+
+        function setTutorialPhase(phase) {
+            state.tutPhase = phase;
+            tutOverlay.style.opacity = '1';
+            tutOverlay.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+            
+            switch(phase) {
+                case 1:
+                    tutIcon.textContent = '💰';
+                    tutText.textContent = '步驟二：收集資金！';
+                    tutSubtext.textContent = "保持在「⛏️ 踩下」模式，點擊掉落的金幣！第一枚特別補助將給予 50 枚金幣。";
+                    break;
+                case 2:
+                    tutIcon.textContent = '🐗';
+                    tutText.textContent = '步驟三：雇用野豬！';
+                    tutSubtext.textContent = '資金充足！點擊上方發光的綠色按鈕雇用一隻野豬幫忙吧。';
+                    hireBoarBtn.classList.add('highlight-pulse');
+                    document.getElementById('mode-pan').click(); 
+                    break;
+                case 3:
+                    // Hide tutorial while boar does script
+                    tutOverlay.style.opacity = '0';
+                    hireBoarBtn.classList.remove('highlight-pulse');
+                    break; 
+                case 4:
+                    tutOverlay.style.opacity = '1';
+                    tutIcon.textContent = '🚨';
+                    tutText.textContent = '糟糕！野豬踩到地雷了！';
+                    tutSubtext.textContent = "野豬暈倒了！切換到「⛏️ 踩下」模式，點擊地圖上的愛心，然後點擊野豬救醒牠！";
+                    tutOverlay.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                    break;
+                case 5:
+                    tutIcon.textContent = '🎉';
+                    tutText.textContent = '教學完成！';
+                    tutSubtext.textContent = '野豬現在會運用聰明 AI 自動排雷、撿金幣了！開始你的無盡探險吧！';
+                    tutOverlay.style.borderColor = 'rgba(52, 211, 153, 0.5)';
+                    setTimeout(() => { tutOverlay.style.opacity = '0'; }, 5000);
+                    break;
+            }
+            updateUI();
+        }
+
+        function spawnLoot(x, y, type) {
+            loots.push({ id: nextLootId++, x, y, type });
+        }
+
+        function initiateDig(x, y, sourceBoar = null, forceMine = false) {
+            if (state.isGameOver) return;
+            const key = `${x},${y}`;
+            const st = cellStates.get(key) || 0;
+            
+            if (st !== ST_HIDDEN) return; 
+
+            if (state.firstClick) {
+                state.firstClick = false;
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dy = -2; dy <= 2; dy++) {
+                        safeZones.add(`${x + dx},${y + dy}`);
+                    }
+                }
+                if (state.tutPhase === 0) setTutorialPhase(1);
+            }
+            
+            cellStates.set(key, ST_IN_QUEUE);
+            pendingDigs.push({x, y, source: sourceBoar, forceMine});
+        }
+
+        function processPendingDigs() {
+            if (state.isGameOver) return;
+            
+            let processed = 0;
+            while (pendingDigs.length > 0 && processed < MAX_DIGS_PER_FRAME) {
+                const job = pendingDigs.shift();
+                const {x, y, source, forceMine} = job;
+                const key = `${x},${y}`;
+
+                cellStates.set(key, ST_REVEALED); 
+                processed++;
+
+                let content = forceMine ? TYPE_MINE : getCellContent(x, y);
+
+                if (content === TYPE_MINE) {
+                    if (source) {
+                        source.faint();
+                    } else {
+                        if (state.tutPhase >= 5) {
+                            state.hp--;
+                            if (state.hp <= 0) setGameOver();
+                        }
+                    }
+                } else if (content === TYPE_HEART) {
+                    spawnLoot(x, y, 'heart');
+                } else {
+                    state.score += 5;
+                    
+                    if (state.tutPhase === 1 && state.coins === 0 && loots.filter(l => l.type==='coin').length === 0) {
+                        spawnLoot(x, y, 'coin');
+                        // Phase 1 guarantees a coin to fetch for the tutorial
+                    } else if (Math.random() < COIN_CHANCE) {
+                        spawnLoot(x, y, 'coin');
+                    }
+
+                    const adj = getAdjacentMines(x, y);
+                    if (adj === 0) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const nKey = `${x+dx},${y+dy}`;
+                                const nSt = cellStates.get(nKey) || 0;
+                                if (nSt === ST_HIDDEN) {
+                                    cellStates.set(nKey, ST_IN_QUEUE);
+                                    pendingDigs.push({x: x+dx, y: y+dy, source, forceMine: false});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (processed > 0) updateUI();
+        }
+
+        function toggleFlag(x, y) {
+            // Player manual toggle
+            if (state.isGameOver || state.firstClick) return;
+            const key = `${x},${y}`;
+            const st = cellStates.get(key) || 0;
+            
+            if (st === ST_HIDDEN) {
+                cellStates.set(key, ST_FLAGGED);
+            } else if (st === ST_FLAGGED) {
+                cellStates.set(key, ST_HIDDEN);
+            }
+        }
+        
+        function applyFlag(x, y) {
+            // Boar strict flag application (NEVER toggle off)
+            if (state.isGameOver || state.firstClick) return;
+            const key = `${x},${y}`;
+            const st = cellStates.get(key) || 0;
+            if (st === ST_HIDDEN) {
+                cellStates.set(key, ST_FLAGGED);
+            }
+        }
+
+        function getNearbyHiddenCell(bx, by, skipCells = []) {
+            for(let r=1; r<10; r++) {
+                for(let dx=-r; dx<=r; dx++) {
+                    for(let dy=-r; dy<=r; dy++) {
+                        let nx = bx+dx, ny = by+dy;
+                        let k = `${nx},${ny}`;
+                        let st = cellStates.get(k) || 0;
+                        if (st === ST_HIDDEN && !skipCells.includes(k)) {
+                            return {x: nx, y: ny, k: k};
+                        }
+                    }
+                }
+            }
+            return {x: bx+2, y: by+2, k: `${bx+2},${by+2}`};
+        }
+
+        class Boar {
+            constructor(startX, startY, isTutorial = false) {
+                this.id = nextBoarId++;
+                this.x = startX;
+                this.y = startY;
+                this.state = 'idle'; 
+                this.target = null;
+                this.timer = 0;
+                this.speed = 130; 
+                this.facingRight = false; // Left by default
+                this.faintTimer = 0;
+                this.currentReservation = null;
+                
+                this.isTutorial = isTutorial;
+                this.tutStep = 0; 
+                
+                if (this.isTutorial) {
+                    let bx = Math.floor(startX / CELL_SIZE);
+                    let by = Math.floor(startY / CELL_SIZE);
+                    
+                    let c1 = getNearbyHiddenCell(bx, by);
+                    this.scriptDig = c1;
+                    let c2 = getNearbyHiddenCell(bx, by, [c1.k]);
+                    this.scriptFlag = c2;
+                    let c3 = getNearbyHiddenCell(bx, by, [c1.k, c2.k]);
+                    this.scriptMine = c3;
+                }
+            }
+            
+            clearReservation() {
+                if (this.currentReservation) {
+                    globalBoarReservations.delete(this.currentReservation);
+                    this.currentReservation = null;
+                }
+            }
+
+            faint() {
+                this.state = 'fainted';
+                this.faintTimer = this.isTutorial ? Infinity : FAINT_DURATION;
+                this.target = null;
+                this.clearReservation();
+                
+                if (this.isTutorial) {
+                    spawnLoot(Math.floor(this.x/CELL_SIZE), Math.floor(this.y/CELL_SIZE) + 1, 'heart');
+                    setTutorialPhase(4);
+                }
+            }
+
+            performSmartScan() {
+                const bx = Math.floor(this.x / CELL_SIZE);
+                const by = Math.floor(this.y / CELL_SIZE);
+                
+                let possibleMoves = [];
+
+                for(let dx = -BOAR_SCAN_RADIUS; dx <= BOAR_SCAN_RADIUS; dx++) {
+                    for(let dy = -BOAR_SCAN_RADIUS; dy <= BOAR_SCAN_RADIUS; dy++) {
+                        let cx = bx + dx, cy = by + dy;
+                        if (cellStates.get(`${cx},${cy}`) === ST_REVEALED) {
+                            let adjMines = getAdjacentMines(cx, cy);
+                            if (adjMines > 0) {
+                                let hiddenCount = 0, flagCount = 0;
+                                let hiddenCells = [];
+                                
+                                for(let nx = -1; nx <= 1; nx++) {
+                                    for(let ny = -1; ny <= 1; ny++) {
+                                        if(nx===0 && ny===0) continue;
+                                        let nk = `${cx+nx},${cy+ny}`;
+                                        let nSt = cellStates.get(nk) || 0;
+                                        let res = globalBoarReservations.get(nk);
+
+                                        // Apply global reservations strict logic
+                                        if (nSt === ST_FLAGGED || res === 'FLAG') {
+                                            flagCount++;
+                                        } else if (nSt === ST_HIDDEN && res !== 'DIG' && res !== 'DIG_MINE') {
+                                            hiddenCount++;
+                                            hiddenCells.push({x: cx+nx, y: cy+ny});
+                                        }
+                                    }
+                                }
+
+                                if (hiddenCount > 0) {
+                                    if (flagCount === adjMines) {
+                                        possibleMoves.push({ action: 'dig', cell: hiddenCells[0] });
+                                    } 
+                                    else if (flagCount + hiddenCount === adjMines) {
+                                        possibleMoves.push({ action: 'flag', cell: hiddenCells[0] });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (possibleMoves.length > 0) {
+                    let move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    this.setGridTarget(move.cell, move.action);
+                    return true;
+                }
+                return false;
+            }
+
+            searchForLootOrRescue() {
+                let nearestDist = Infinity;
+                let bestTarget = null;
+
+                for (let loot of loots) {
+                    let resKey = `loot_${loot.id}`;
+                    if (globalBoarReservations.has(resKey)) continue; // skip already claimed loots
+
+                    let lx = loot.x * CELL_SIZE + CELL_SIZE/2;
+                    let ly = loot.y * CELL_SIZE + CELL_SIZE/2;
+                    let dist = Math.hypot(lx - this.x, ly - this.y);
+                    
+                    if (dist > BOAR_SCAN_RADIUS * CELL_SIZE) continue;
+                    
+                    if (loot.type === 'heart' && state.hp >= MAX_HP) continue; 
+                    
+                    let adjustedDist = dist - (loot.type === 'heart' ? 1000 : 0);
+
+                    if (adjustedDist < nearestDist) {
+                        nearestDist = adjustedDist;
+                        bestTarget = loot;
+                    }
+                }
+
+                if (bestTarget) {
+                    let resKey = `loot_${bestTarget.id}`;
+                    globalBoarReservations.set(resKey, 'PICKUP');
+                    this.currentReservation = resKey;
+                    this.target = bestTarget;
+                    this.state = 'fetching';
+                    return true;
+                }
+                return false;
+            }
+
+            setGridTarget(cell, action) {
+                this.target = { x: cell.x, y: cell.y, action: action, isGrid: true };
+                this.state = 'moving';
+                this.currentReservation = `${cell.x},${cell.y}`;
+                globalBoarReservations.set(this.currentReservation, action.toUpperCase());
+            }
+
+            update(dt) {
+                if (state.isGameOver) return;
+
+                if (this.state === 'fainted') {
+                    if (!this.isTutorial) {
+                        this.faintTimer -= dt;
+                        if (this.faintTimer <= 0) {
+                            const index = boars.indexOf(this);
+                            if(index > -1) boars.splice(index, 1);
+                            updateUI();
+                        }
+                    }
+                    return;
+                }
+
+                // STRICT TUTORIAL OVERRIDE
+                if (this.isTutorial) {
+                    if (this.state === 'idle') {
+                        if (this.tutStep === 0) {
+                            this.setGridTarget(this.scriptDig, 'dig');
+                            this.tutStep++;
+                        } else if (this.tutStep === 1) {
+                            this.setGridTarget(this.scriptFlag, 'flag');
+                            this.tutStep++;
+                        } else if (this.tutStep === 2) {
+                            this.setGridTarget(this.scriptMine, 'dig_mine');
+                            this.tutStep++;
+                        }
+                    }
+                } 
+                else if (this.state === 'idle') {
+                    if (state.firstClick) return;
+                    
+                    // Priority Queue
+                    if (this.searchForLootOrRescue()) return;
+                    if (this.performSmartScan()) return;
+
+                    // Wander
+                    this.x += (Math.random() - 0.5) * 15;
+                    this.y += (Math.random() - 0.5) * 15;
+                    if (Math.random() < 0.05) this.facingRight = !this.facingRight;
+                } 
+                
+                if (this.state === 'moving' || this.state === 'fetching') {
+                    
+                    let tx, ty;
+                    if (this.target.isGrid) {
+                        tx = this.target.x * CELL_SIZE + CELL_SIZE/2;
+                        ty = this.target.y * CELL_SIZE + CELL_SIZE/2;
+                    } else {
+                        if(!loots.includes(this.target)) {
+                            this.clearReservation();
+                            this.state = 'idle'; 
+                            return;
+                        }
+                        tx = this.target.x * CELL_SIZE + CELL_SIZE/2;
+                        ty = this.target.y * CELL_SIZE + CELL_SIZE/2;
+                    }
+
+                    const dx = tx - this.x;
+                    const dy = ty - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    const step = this.speed * (dt / 1000) * (this.isTutorial ? 1.5 : 1); 
+
+                    if (dx > 1) this.facingRight = true;
+                    else if (dx < -1) this.facingRight = false;
+
+                    if (dist <= step) {
+                        this.x = tx;
+                        this.y = ty;
+                        
+                        if (this.state === 'fetching') {
+                            const idx = loots.indexOf(this.target);
+                            if (idx > -1) {
+                                if (this.target.type === 'coin') {
+                                    state.coins += 1;
+                                    state.score += 10;
+                                } else if (this.target.type === 'heart') {
+                                    state.hp++;
+                                    state.score += 50;
+                                }
+                                loots.splice(idx, 1);
+                                updateUI();
+                            }
+                            this.clearReservation();
+                            this.state = 'idle';
+                        } else {
+                            this.state = 'thinking';
+                            this.timer = 0.4; 
+                        }
+                    } else {
+                        this.x += (dx / dist) * step;
+                        this.y += (dy / dist) * step;
+                    }
+                } else if (this.state === 'thinking') {
+                    this.timer -= (dt / 1000);
+                    if (this.timer <= 0) {
+                        if (this.target.action === 'dig') {
+                            initiateDig(this.target.x, this.target.y, this);
+                        }
+                        else if (this.target.action === 'dig_mine') {
+                            initiateDig(this.target.x, this.target.y, this, true);
+                        }
+                        else if (this.target.action === 'flag') {
+                            applyFlag(this.target.x, this.target.y); // Strict apply, never toggle
+                        }
+                        
+                        this.clearReservation();
+                        this.target = null;
+                        if(this.state !== 'fainted') this.state = 'idle';
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                if (['moving', 'fetching'].includes(this.state)) {
+                    const bounce = Math.sin(Date.now() / 80) * 5;
+                    ctx.translate(0, bounce);
+                }
+
+                if (this.facingRight) ctx.scale(-1, 1);
+
+                ctx.font = '32px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                if (this.state === 'fainted') {
+                    ctx.fillText('😵', 0, 0);
+                    
+                    if (!this.isTutorial) {
+                        ctx.restore(); 
+                        ctx.save();
+                        ctx.translate(this.x, this.y);
+                        const pct = this.faintTimer / FAINT_DURATION;
+                        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                        ctx.fillRect(-15, 20, 30, 4);
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(-15, 20, 30 * pct, 4);
+                        ctx.restore();
+                        ctx.save();
+                    }
+                } else {
+                    ctx.fillText('🐗', 0, 0);
+                }
+                ctx.restore();
+
+                if (this.state === 'thinking') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.font = '16px Arial';
+                    ctx.fillText('💭', 15, -20);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function getGridCoords(clientX, clientY) {
+            const worldX = clientX - canvas.width / 2 - state.cameraX;
+            const worldY = clientY - canvas.height / 2 - state.cameraY;
+            return { 
+                x: Math.floor(worldX / CELL_SIZE), 
+                y: Math.floor(worldY / CELL_SIZE),
+                wX: worldX,
+                wY: worldY
+            };
+        }
+
+        let isDragging = false, pointerMoved = false;
+        let dragStartX = 0, dragStartY = 0, camStartX = 0, camStartY = 0;
+
+        canvas.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            pointerMoved = false;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            camStartX = state.cameraX;
+            camStartY = state.cameraY;
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) pointerMoved = true;
+
+            if (state.mode === 'pan' || pointerMoved) {
+                state.cameraX = camStartX + dx;
+                state.cameraY = camStartY + dy;
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            isDragging = false;
+            if (!pointerMoved && !state.isGameOver) {
+                const coords = getGridCoords(e.clientX, e.clientY);
+                
+                if (state.mode === 'dig') {
+                    for (let i = loots.length - 1; i >= 0; i--) {
+                        if (loots[i].x === coords.x && loots[i].y === coords.y) {
+                            if (loots[i].type === 'heart' && state.hp >= MAX_HP) continue;
+                            
+                            if (loots[i].type === 'coin') state.coins += (state.tutPhase === 1 ? 50 : 1);
+                            if (loots[i].type === 'heart') state.hp++;
+                            loots.splice(i, 1);
+                            updateUI();
+                            
+                            if (state.tutPhase === 1) setTutorialPhase(2); 
+                            return; 
+                        }
+                    }
+
+                    if (state.hp > 1 || (state.tutPhase === 4)) {
+                        for (let b of boars) {
+                            if (b.state === 'fainted') {
+                                const dist = Math.hypot(coords.wX - b.x, coords.wY - b.y);
+                                if (dist < 30) {
+                                    if (b.isTutorial) {
+                                        b.isTutorial = false; 
+                                        setTutorialPhase(5);
+                                    } else {
+                                        state.hp--;
+                                    }
+                                    b.state = 'idle';
+                                    b.faintTimer = 0;
+                                    state.score += 100;
+                                    updateUI();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    initiateDig(coords.x, coords.y);
+                } else if (state.mode === 'flag') {
+                    toggleFlag(coords.x, coords.y); // Player can still toggle their own flags off manually
+                }
+            }
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                state.mode = e.currentTarget.id.replace('mode-', '');
+            });
+        });
+
+        hireBoarBtn.addEventListener('click', () => {
+            if (state.coins >= BOAR_COST) {
+                state.coins -= BOAR_COST;
+                
+                const isTut = state.tutPhase === 2;
+                const bx = -state.cameraX;
+                const by = -state.cameraY;
+                boars.push(new Boar(bx, by, isTut));
+                
+                if (isTut) setTutorialPhase(3);
+                updateUI();
+            }
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+        function updateUI() {
+            scoreEl.textContent = state.score;
+            coinsEl.textContent = state.coins;
+            boarCountEl.textContent = boars.length;
+            
+            let hpStr = '';
+            for(let i=0; i<MAX_HP; i++) hpStr += i < state.hp ? '❤️' : '🖤';
+            hpEl.textContent = hpStr;
+
+            hireBoarBtn.disabled = state.coins < BOAR_COST;
+
+            if (autoHireCheckbox.checked && state.coins >= BOAR_COST && state.tutPhase >= 5) {
+                hireBoarBtn.click();
+            }
+        }
+
+        function setGameOver() {
+            state.isGameOver = true;
+            document.getElementById('final-score').textContent = state.score;
+            gameOverModal.classList.remove('hidden');
+            gameOverModal.classList.add('flex');
+            setTimeout(() => {
+                gameOverModal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function resetGame() {
+            cellStates.clear();
+            safeZones.clear();
+            globalBoarReservations.clear();
+            loots = [];
+            boars = [];
+            pendingDigs = [];
+            
+            state = {
+                mode: 'pan',
+                hp: 4, 
+                score: 0,
+                coins: 0,
+                cameraX: 0,
+                cameraY: 0,
+                isGameOver: false,
+                firstClick: true,
+                lastTime: performance.now(),
+                tutPhase: 0
+            };
+            
+            document.getElementById('mode-pan').click();
+            setTutorialPhase(0);
+
+            gameOverModal.classList.add('opacity-0');
+            setTimeout(() => {
+                gameOverModal.classList.add('hidden');
+                gameOverModal.classList.remove('flex');
+            }, 300);
+            updateUI();
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        window.dispatchEvent(new Event('resize'));
+
+        const colors = {
+            hidden: '#1e293b',
+            hiddenTop: '#334155',
+            hiddenBot: '#0f172a',
+            revealed: '#020617',
+            revealedBorder: '#1e293b',
+            text: ['', '#60a5fa', '#4ade80', '#f87171', '#a78bfa', '#fb923c', '#22d3ee', '#fde047', '#f472b6']
+        };
+
+        function draw() {
+            const now = performance.now();
+            const dt = now - state.lastTime;
+            state.lastTime = now;
+
+            processPendingDigs();
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const halfW = canvas.width / 2;
+            const halfH = canvas.height / 2;
+            
+            const startCol = Math.floor((-halfW - state.cameraX) / CELL_SIZE);
+            const endCol = Math.floor((halfW - state.cameraX) / CELL_SIZE) + 1;
+            const startRow = Math.floor((-halfH - state.cameraY) / CELL_SIZE);
+            const endRow = Math.floor((halfH - state.cameraY) / CELL_SIZE) + 1;
+
+            ctx.save();
+            ctx.translate(halfW + state.cameraX, halfH + state.cameraY);
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 20px Inter, sans-serif';
+
+            for (let x = startCol; x <= endCol; x++) {
+                for (let y = startRow; y <= endRow; y++) {
+                    const screenX = x * CELL_SIZE;
+                    const screenY = y * CELL_SIZE;
+                    const st = cellStates.get(`${x},${y}`) || 0;
+
+                    if (st === ST_HIDDEN || st === ST_FLAGGED || st === ST_IN_QUEUE) {
+                        ctx.fillStyle = colors.hidden;
+                        ctx.fillRect(screenX, screenY, CELL_SIZE, CELL_SIZE);
+                        
+                        ctx.fillStyle = colors.hiddenTop;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY);
+                        ctx.lineTo(screenX + CELL_SIZE, screenY);
+                        ctx.lineTo(screenX + CELL_SIZE - 4, screenY + 4);
+                        ctx.lineTo(screenX + 4, screenY + 4);
+                        ctx.lineTo(screenX + 4, screenY + CELL_SIZE - 4);
+                        ctx.lineTo(screenX, screenY + CELL_SIZE);
+                        ctx.fill();
+
+                        ctx.fillStyle = colors.hiddenBot;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX + CELL_SIZE, screenY + CELL_SIZE);
+                        ctx.lineTo(screenX, screenY + CELL_SIZE);
+                        ctx.lineTo(screenX + 4, screenY + CELL_SIZE - 4);
+                        ctx.lineTo(screenX + CELL_SIZE - 4, screenY + CELL_SIZE - 4);
+                        ctx.lineTo(screenX + CELL_SIZE - 4, screenY + 4);
+                        ctx.lineTo(screenX + CELL_SIZE, screenY);
+                        ctx.fill();
+
+                        if (st === ST_FLAGGED) {
+                            ctx.font = '22px Arial';
+                            ctx.fillText('🚩', screenX + CELL_SIZE/2, screenY + CELL_SIZE/2 + 2);
+                            ctx.font = 'bold 20px Inter, sans-serif'; 
+                        }
+                    } else if (st === ST_REVEALED) {
+                        ctx.fillStyle = colors.revealed;
+                        ctx.fillRect(screenX, screenY, CELL_SIZE, CELL_SIZE);
+                        ctx.strokeStyle = colors.revealedBorder;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(screenX, screenY, CELL_SIZE, CELL_SIZE);
+
+                        const content = getCellContent(x, y);
+                        if (content === TYPE_MINE) {
+                            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+                            ctx.fillRect(screenX, screenY, CELL_SIZE, CELL_SIZE);
+                            ctx.font = '22px Arial';
+                            ctx.fillText('💥', screenX + CELL_SIZE/2, screenY + CELL_SIZE/2);
+                            ctx.font = 'bold 20px Inter, sans-serif';
+                        } else {
+                            const adj = getAdjacentMines(x, y);
+                            if (adj > 0) {
+                                ctx.fillStyle = colors.text[adj];
+                                ctx.fillText(adj, screenX + CELL_SIZE/2, screenY + CELL_SIZE/2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            const bounce = Math.sin(Date.now() / 200) * 4;
+            loots.forEach(loot => {
+                const lx = loot.x * CELL_SIZE + CELL_SIZE/2;
+                const ly = loot.y * CELL_SIZE + CELL_SIZE/2;
+                
+                ctx.save();
+                ctx.translate(lx, ly + bounce);
+                ctx.font = '24px Arial';
+                ctx.shadowColor = loot.type === 'coin' ? 'rgba(250, 204, 21, 0.5)' : 'rgba(248, 113, 113, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(loot.type === 'coin' ? '💰' : '❤️', 0, 0);
+                ctx.restore();
+            });
+
+            boars.forEach(boar => {
+                boar.update(dt);
+                boar.draw(ctx);
+            });
+            
+            ctx.restore();
+            requestAnimationFrame(draw);
+        }
+
+        // Start
+        updateUI();
+        setTutorialPhase(0);
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>
