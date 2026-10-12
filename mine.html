@@ -406,7 +406,11 @@
                 this.speed = 130; 
                 this.facingRight = false; // Left by default
                 this.faintTimer = 0;
-                this.currentReservation = null;
+                
+                this.reservedLootKey = null;
+                this.reservedRescueKey = null;
+                this.reservedGridKey = null;
+                this.rescueTarget = null;
                 
                 this.isTutorial = isTutorial;
                 this.tutStep = 0; 
@@ -424,23 +428,69 @@
                 }
             }
             
-            clearReservation() {
-                if (this.currentReservation) {
-                    globalBoarReservations.delete(this.currentReservation);
-                    this.currentReservation = null;
-                }
+            clearReservations() {
+                if (this.reservedLootKey) { globalBoarReservations.delete(this.reservedLootKey); this.reservedLootKey = null; }
+                if (this.reservedRescueKey) { globalBoarReservations.delete(this.reservedRescueKey); this.reservedRescueKey = null; }
+                if (this.reservedGridKey) { globalBoarReservations.delete(this.reservedGridKey); this.reservedGridKey = null; }
+                this.rescueTarget = null;
             }
 
             faint() {
+                this.clearReservations();
                 this.state = 'fainted';
                 this.faintTimer = this.isTutorial ? Infinity : FAINT_DURATION;
                 this.target = null;
-                this.clearReservation();
                 
                 if (this.isTutorial) {
                     spawnLoot(Math.floor(this.x/CELL_SIZE), Math.floor(this.y/CELL_SIZE) + 1, 'heart');
                     setTutorialPhase(4);
                 }
+            }
+
+            checkRescue() {
+                let bestFainted = null;
+                let nearestDistFainted = Infinity;
+
+                for (let b of boars) {
+                    if (b.state === 'fainted' && b !== this) {
+                        let resKey = `rescue_${b.id}`;
+                        if (globalBoarReservations.has(resKey)) continue;
+                        let dist = Math.hypot(b.x - this.x, b.y - this.y);
+                        if (dist < nearestDistFainted) {
+                            nearestDistFainted = dist;
+                            bestFainted = b;
+                        }
+                    }
+                }
+                if (!bestFainted) return false;
+
+                let bestHeart = null;
+                let nearestDistHeart = Infinity;
+                for (let loot of loots) {
+                    if (loot.type === 'heart') {
+                        let resKey = `loot_${loot.id}`;
+                        if (globalBoarReservations.has(resKey)) continue;
+                        let lx = loot.x * CELL_SIZE + CELL_SIZE/2;
+                        let ly = loot.y * CELL_SIZE + CELL_SIZE/2;
+                        let dist = Math.hypot(lx - this.x, ly - this.y);
+                        if (dist < nearestDistHeart) {
+                            nearestDistHeart = dist;
+                            bestHeart = loot;
+                        }
+                    }
+                }
+
+                if (bestFainted && bestHeart) {
+                    this.reservedRescueKey = `rescue_${bestFainted.id}`;
+                    this.reservedLootKey = `loot_${bestHeart.id}`;
+                    globalBoarReservations.set(this.reservedRescueKey, 'RESCUING');
+                    globalBoarReservations.set(this.reservedLootKey, 'PICKUP');
+                    this.rescueTarget = bestFainted;
+                    this.target = bestHeart;
+                    this.state = 'fetching_heart';
+                    return true;
+                }
+                return false;
             }
 
             performSmartScan() {
@@ -465,7 +515,6 @@
                                         let nSt = cellStates.get(nk) || 0;
                                         let res = globalBoarReservations.get(nk);
 
-                                        // Apply global reservations strict logic
                                         if (nSt === ST_FLAGGED || res === 'FLAG') {
                                             flagCount++;
                                         } else if (nSt === ST_HIDDEN && res !== 'DIG' && res !== 'DIG_MINE') {
@@ -496,13 +545,13 @@
                 return false;
             }
 
-            searchForLootOrRescue() {
+            searchForLoot() {
                 let nearestDist = Infinity;
                 let bestTarget = null;
 
                 for (let loot of loots) {
                     let resKey = `loot_${loot.id}`;
-                    if (globalBoarReservations.has(resKey)) continue; // skip already claimed loots
+                    if (globalBoarReservations.has(resKey)) continue; 
 
                     let lx = loot.x * CELL_SIZE + CELL_SIZE/2;
                     let ly = loot.y * CELL_SIZE + CELL_SIZE/2;
@@ -521,9 +570,8 @@
                 }
 
                 if (bestTarget) {
-                    let resKey = `loot_${bestTarget.id}`;
-                    globalBoarReservations.set(resKey, 'PICKUP');
-                    this.currentReservation = resKey;
+                    this.reservedLootKey = `loot_${bestTarget.id}`;
+                    globalBoarReservations.set(this.reservedLootKey, 'PICKUP');
                     this.target = bestTarget;
                     this.state = 'fetching';
                     return true;
@@ -534,8 +582,8 @@
             setGridTarget(cell, action) {
                 this.target = { x: cell.x, y: cell.y, action: action, isGrid: true };
                 this.state = 'moving';
-                this.currentReservation = `${cell.x},${cell.y}`;
-                globalBoarReservations.set(this.currentReservation, action.toUpperCase());
+                this.reservedGridKey = `${cell.x},${cell.y}`;
+                globalBoarReservations.set(this.reservedGridKey, action.toUpperCase());
             }
 
             update(dt) {
@@ -553,7 +601,6 @@
                     return;
                 }
 
-                // STRICT TUTORIAL OVERRIDE
                 if (this.isTutorial) {
                     if (this.state === 'idle') {
                         if (this.tutStep === 0) {
@@ -571,25 +618,32 @@
                 else if (this.state === 'idle') {
                     if (state.firstClick) return;
                     
-                    // Priority Queue
-                    if (this.searchForLootOrRescue()) return;
+                    if (this.checkRescue()) return;
+                    if (this.searchForLoot()) return;
                     if (this.performSmartScan()) return;
 
-                    // Wander
                     this.x += (Math.random() - 0.5) * 15;
                     this.y += (Math.random() - 0.5) * 15;
                     if (Math.random() < 0.05) this.facingRight = !this.facingRight;
                 } 
                 
-                if (this.state === 'moving' || this.state === 'fetching') {
+                if (['moving', 'fetching', 'fetching_heart', 'running_to_rescue'].includes(this.state)) {
                     
                     let tx, ty;
-                    if (this.target.isGrid) {
+                    if (this.state === 'running_to_rescue') {
+                        if (this.rescueTarget.state !== 'fainted') {
+                            this.clearReservations();
+                            this.state = 'idle';
+                            return;
+                        }
+                        tx = this.rescueTarget.x;
+                        ty = this.rescueTarget.y;
+                    } else if (this.target.isGrid) {
                         tx = this.target.x * CELL_SIZE + CELL_SIZE/2;
                         ty = this.target.y * CELL_SIZE + CELL_SIZE/2;
                     } else {
                         if(!loots.includes(this.target)) {
-                            this.clearReservation();
+                            this.clearReservations();
                             this.state = 'idle'; 
                             return;
                         }
@@ -600,7 +654,12 @@
                     const dx = tx - this.x;
                     const dy = ty - this.y;
                     const dist = Math.hypot(dx, dy);
-                    const step = this.speed * (dt / 1000) * (this.isTutorial ? 1.5 : 1); 
+                    
+                    let speedMult = 1;
+                    if (this.isTutorial) speedMult = 1.5;
+                    if (['fetching_heart', 'running_to_rescue'].includes(this.state)) speedMult = 2.0;
+                    
+                    const step = this.speed * (dt / 1000) * speedMult; 
 
                     if (dx > 1) this.facingRight = true;
                     else if (dx < -1) this.facingRight = false;
@@ -609,7 +668,37 @@
                         this.x = tx;
                         this.y = ty;
                         
-                        if (this.state === 'fetching') {
+                        if (this.state === 'fetching_heart') {
+                            const idx = loots.indexOf(this.target);
+                            if (idx > -1) loots.splice(idx, 1);
+                            
+                            if (this.reservedLootKey) {
+                                globalBoarReservations.delete(this.reservedLootKey);
+                                this.reservedLootKey = null;
+                            }
+                            
+                            if (this.rescueTarget.state !== 'fainted') {
+                                if (state.hp < MAX_HP) { state.hp++; updateUI(); }
+                                this.clearReservations();
+                                this.state = 'idle';
+                            } else {
+                                this.state = 'running_to_rescue';
+                                this.target = null; 
+                            }
+                        } else if (this.state === 'running_to_rescue') {
+                            if (this.rescueTarget.state === 'fainted') {
+                                this.rescueTarget.state = 'idle';
+                                this.rescueTarget.faintTimer = 0;
+                                if (this.rescueTarget.isTutorial) {
+                                    this.rescueTarget.isTutorial = false;
+                                    setTutorialPhase(5);
+                                }
+                                state.score += 100;
+                                updateUI();
+                            }
+                            this.clearReservations();
+                            this.state = 'idle';
+                        } else if (this.state === 'fetching') {
                             const idx = loots.indexOf(this.target);
                             if (idx > -1) {
                                 if (this.target.type === 'coin') {
@@ -622,7 +711,7 @@
                                 loots.splice(idx, 1);
                                 updateUI();
                             }
-                            this.clearReservation();
+                            this.clearReservations();
                             this.state = 'idle';
                         } else {
                             this.state = 'thinking';
@@ -642,10 +731,10 @@
                             initiateDig(this.target.x, this.target.y, this, true);
                         }
                         else if (this.target.action === 'flag') {
-                            applyFlag(this.target.x, this.target.y); // Strict apply, never toggle
+                            applyFlag(this.target.x, this.target.y); 
                         }
                         
-                        this.clearReservation();
+                        this.clearReservations();
                         this.target = null;
                         if(this.state !== 'fainted') this.state = 'idle';
                     }
@@ -656,7 +745,7 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                if (['moving', 'fetching'].includes(this.state)) {
+                if (['moving', 'fetching', 'fetching_heart', 'running_to_rescue'].includes(this.state)) {
                     const bounce = Math.sin(Date.now() / 80) * 5;
                     ctx.translate(0, bounce);
                 }
@@ -685,6 +774,13 @@
                 } else {
                     ctx.fillText('🐗', 0, 0);
                 }
+                
+                if (this.state === 'running_to_rescue') {
+                    ctx.scale(this.facingRight ? -1 : 1, 1);
+                    ctx.font = '20px Arial';
+                    ctx.fillText('❤️', 0, -25);
+                }
+
                 ctx.restore();
 
                 if (this.state === 'thinking') {
@@ -765,6 +861,7 @@
                                     }
                                     b.state = 'idle';
                                     b.faintTimer = 0;
+                                    b.clearReservations();
                                     state.score += 100;
                                     updateUI();
                                     return;
@@ -775,7 +872,7 @@
 
                     initiateDig(coords.x, coords.y);
                 } else if (state.mode === 'flag') {
-                    toggleFlag(coords.x, coords.y); // Player can still toggle their own flags off manually
+                    toggleFlag(coords.x, coords.y); 
                 }
             }
         });
