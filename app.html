@@ -9,7 +9,7 @@
     // ==========================================
     // 📌 【設定專區】將你的 Google Script 網址貼在下方引號內
     // ==========================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbwPctaRO0cOVytzEHsmBhc5TfP5s9bFCcFyohqy8ZzW3cGdEvJEBc7vysk08656Qm1e/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbz4ifQKTj4sDysjkpkOUwVhMzWVMwbQwMA84TOU_q4pEGPSqNqDmNQ7CdUVVmOnpDkz/exec"; 
   </script>
 
   <link rel="icon" href="https://seankuo0105.github.io/boar/pig4k.png" type="image/png">
@@ -303,7 +303,10 @@
       if (!currentUser) return;
       document.getElementById("top-points").innerText = currentUser.points; document.getElementById("side-name").innerText = currentUser.displayName; document.getElementById("side-acc").innerText = currentUser.account; document.getElementById("side-title").innerText = currentUser.title; document.getElementById("side-avatar").src = currentUser.avatar || "https://seankuo0105.github.io/boar/pig4k.png"; document.getElementById("avatar-url-input").value = currentUser.avatar || "";
 
-      const today = new Date().toISOString().split('T')[0];
+      // ✨ 精準取得台灣時區的 YYYY-MM-DD
+      let d = new Date(); d.setMinutes(d.getMinutes() + d.getTimezoneOffset() + 480);
+      const today = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+
       const chkBtn = document.getElementById("checkin-btn");
       if (currentUser.lastSign === today) { chkBtn.disabled = true; chkBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> 今日已簽到`; } 
       else { chkBtn.disabled = false; chkBtn.innerHTML = `<span class="material-symbols-outlined">event_available</span> 每日簽到 (+50點)`; }
@@ -312,7 +315,6 @@
       if (currentUser.freeRename > 0) { tip.style.color = "var(--success)"; tip.innerText = `✨ 您還享有 ${currentUser.freeRename} 次【首次免費改名】額度！`; } 
       else { tip.style.color = "var(--primary-hover)"; tip.innerText = `💡 免費額度已用完，改名需花費 100 點數。`; }
 
-      // ✨ 從雲端讀取真正的永久解鎖稱號庫
       const wrap = document.getElementById("owned-titles"); wrap.innerHTML = "";
       const titles = currentUser.unlockedTitles || [currentUser.title];
       titles.forEach(t => {
@@ -399,17 +401,12 @@
       showToast(res.message); if (res.success) document.getElementById("new-name-input").value = "";
     }
     
-    // 🔐 修改密碼函式
     async function changePassword() {
-      const oldPw = document.getElementById("old-pw").value;
-      const newPw = document.getElementById("new-pw").value;
+      const oldPw = document.getElementById("old-pw").value; const newPw = document.getElementById("new-pw").value;
       if (!oldPw || !newPw) return showToast("請完整填寫舊密碼與新密碼喔！");
       if (isSyncing) return; isSyncing = true;
-      
       const res = await callServer({ action: 'changePassword', account: currentUser.account, oldPassword: oldPw, newPassword: newPw });
-      isSyncing = false;
-      
-      showToast(res.message);
+      isSyncing = false; showToast(res.message);
       if (res.success) { document.getElementById("old-pw").value = ""; document.getElementById("new-pw").value = ""; }
     }
 
