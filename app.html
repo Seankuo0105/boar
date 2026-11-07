@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>山豬實行會員網站</title>
+  <!-- 網站 Icon -->
+  <link rel="icon" href="https://seankuo0105.github.io/boar/pig4k.png" type="image/png">
+  <!-- 引入截圖中的 Material Symbols 圖示 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  
+  <style>
+    /* 深綠色山豬森林主題 🌲🐗 */
+    body {
+      background-color: #1a3c28; /* 深綠色背景 */
+      color: #e0f0e3;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background-color: #245236;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    }
+    input, button {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    button:hover { background-color: #45a049; }
+    .game-btn { background-color: #d4a373; color: #333; }
+    .game-btn.disabled { background-color: #777; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <!-- 登入畫面 -->
+  <div id="login-view" class="container">
+    <h2><img src="https://seankuo0105.github.io/boar/pig4k.png" width="40" style="vertical-align: middle;"> 山豬實行會員登入</h2>
+    <input type="text" id="acc-input" placeholder="請輸入帳號">
+    <input type="password" id="pw-input" placeholder="請輸入密碼">
+    <button onclick="login()">
+      <span class="material-symbols-outlined">login</span> 登入 / 註冊
+    </button>
+  </div>
+
+  <!-- 會員大廳畫面 (預設隱藏) -->
+  <div id="dashboard-view" class="container" style="display: none;">
+    <h2>歡迎回窩，<span id="display-name"></span>！🐗</h2>
+    <h3 style="color: #ffc107;">目前點數：<span id="points-display">0</span> 點</h3>
+    
+    <hr style="border-color: #4CAF50;">
+    
+    <h3>🎮 賺取點數區 (冷卻時間1小時)</h3>
+    <!-- 這裡可以連結到你做的 HTML5 Canvas 遊戲 -->
+    <button id="btn-minesweeper" class="game-btn" onclick="playGame('minesweeper', '踩地雷')">
+      <span class="material-symbols-outlined">stadia_controller</span> 玩【踩地雷】賺點數
+    </button>
+    <button id="btn-match3" class="game-btn" onclick="playGame('match3', '消除方塊')">
+      <span class="material-symbols-outlined">extension</span> 玩【消除方塊】賺點數
+    </button>
+    
+    <br><br>
+    <button onclick="logout()" style="background-color: #d32f2f;">
+      <span class="material-symbols-outlined">logout</span> 登出
+    </button>
+  </div>
+
+  <script>
+    // 噗嚕！剛進網頁時檢查有沒有登入過
+    window.onload = function() {
+      if (localStorage.getItem("boar_account")) {
+        showDashboard(
+          localStorage.getItem("boar_name"), 
+          localStorage.getItem("boar_points")
+        );
+        checkCooldowns();
+      }
+    }
+
+    function login() {
+      let acc = document.getElementById("acc-input").value;
+      let pw = document.getElementById("pw-input").value;
+      if(!acc || !pw) { alert("哼哧！帳號密碼要填寫喔！🐗💦"); return; }
+
+      // 這裡之後要改成用 fetch 呼叫你的 Google Script API
+      // 目前先做個假登入測試畫面用！
+      let fakeData = { name: "新手小豬", points: 50 };
+      
+      // 登入成功後，把資料安全地存在 localStorage
+      localStorage.setItem("boar_account", acc);
+      localStorage.setItem("boar_name", fakeData.name);
+      localStorage.setItem("boar_points", fakeData.points);
+      
+      showDashboard(fakeData.name, fakeData.points);
+    }
+
+    function showDashboard(name, points) {
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("dashboard-view").style.display = "block";
+      document.getElementById("display-name").innerText = name;
+      document.getElementById("points-display").innerText = points;
+      checkCooldowns();
+    }
+
+    function logout() {
+      localStorage.clear(); // 登出就把本機資料清掉，超乾淨！
+      document.getElementById("login-view").style.display = "block";
+      document.getElementById("dashboard-view").style.display = "none";
+    }
+
+    // 哼哧！檢查遊戲冷卻時間 (1小時 = 3600000毫秒)
+    function checkCooldowns() {
+      let games = ['minesweeper', 'match3'];
+      let now = Date.now();
+      
+      games.forEach(game => {
+        let lastPlayed = localStorage.getItem("lastPlayed_" + game);
+        let btn = document.getElementById("btn-" + game);
+        
+        if (lastPlayed && (now - lastPlayed < 3600000)) {
+          // 還在冷卻中
+          let minutesLeft = Math.ceil((3600000 - (now - lastPlayed)) / 60000);
+          btn.classList.add("disabled");
+          btn.innerHTML = `<span class="material-symbols-outlined">timer</span> 休息中 (${minutesLeft}分後可玩)`;
+          btn.onclick = null; // 鎖住按鈕
+        }
+      });
+    }
+
+    // 點擊玩遊戲
+    function playGame(gameId, gameName) {
+      alert("跳轉到 " + gameName + "！(過關後會呼叫後台加點數) 🐗💨");
+      
+      // 記錄這次遊玩的時間
+      localStorage.setItem("lastPlayed_" + gameId, Date.now());
+      checkCooldowns(); // 刷新按鈕狀態
+    }
+  </script>
+</body>
+</html>
