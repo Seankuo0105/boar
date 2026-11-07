@@ -655,355 +655,385 @@
 
   <div id="toast" class="toast"></div>
 
-  <script>
-    // ==========================================
-    // 📌 請在此填入你部署後的 Google Apps Script 網址
-    // (若留空，系統會自動使用瀏覽器本地模擬資料庫，方便立刻測試所有功能！)
-    // ==========================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbwT4Y2-PghCbdv-EfDfCshzoKX9vx9_YDUDk40b0kiozZGIKPxdqdwYok6lniDsSOOh/exec"; 
+ <script>
+  // ==========================================
+  // 📌 請填入你部署後的 Google Apps Script 網址
+  // ==========================================
+  const API_URL = "請把你的_https://script.google.com/macros/s/.../exec_貼在這裡"; 
 
-    let currentUser = null;
-    let activeGameTimer = null;
+  let currentUser = null;
+  let activeGameTimer = null;
+  let isSyncing = false;
 
-    const GACHA_POOL = [
-      { title: "【SSR】傳說黃金神豬👑", rate: 0.05 },
-      { title: "【SR】山豬實行鐵粉🔥", rate: 0.15 },
-      { title: "【SR】森林破陣先鋒⚡", rate: 0.20 },
-      { title: "【R】快樂打滾小豬🐾", rate: 0.30 },
-      { title: "【N】迷路小野豬🌱", rate: 0.30 }
-    ];
-
-    window.onload = () => {
-      const saved = localStorage.getItem("boar_active_user");
-      if (saved) {
-        currentUser = JSON.parse(saved);
-        enterDashboard();
-      }
-      setInterval(updateGameButtonsCooldown, 1000);
-    };
-
-    function showToast(msg) {
-      const t = document.getElementById("toast");
-      t.innerText = msg;
-      t.style.display = "block";
-      setTimeout(() => t.style.display = "none", 3000);
+  // 取得玩家已解鎖的稱號清單 (僅紀錄解鎖過的稱號按鈕，點數與當前稱號一律以雲端為準)
+  function getOwnedTitles(acc, currentTitle) {
+    let list = JSON.parse(localStorage.getItem("boar_titles_" + acc) || '["初階小野豬"]');
+    if (currentTitle && !list.includes(currentTitle)) {
+      list.push(currentTitle);
+      localStorage.setItem("boar_titles_" + acc, JSON.stringify(list));
     }
+    return list;
+  }
 
-    // 切換登入與註冊分頁
-    function switchAuthTab(mode) {
-      document.getElementById("tab-btn-login").classList.toggle("active", mode === 'login');
-      document.getElementById("tab-btn-register").classList.toggle("active", mode === 'register');
-      document.getElementById("login-form").style.display = mode === 'login' ? "block" : "none";
-      document.getElementById("register-form").style.display = mode === 'register' ? "block" : "none";
+  window.onload = async () => {
+    const savedAcc = localStorage.getItem("boar_session_acc");
+    if (savedAcc) {
+      await syncWithCloud(savedAcc);
     }
+    setInterval(updateGameButtonsCooldown, 1000);
+  };
 
-    // 後台通訊輔助函式 (支援雲端 Google Script 與本機預覽雙模式)
-    async function callServer(payload) {
-      if (API_URL) {
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          return await res.json();
-        } catch (e) {
-          showToast("雲端連線異常，已切換為本機儲存模式");
-        }
-      }
-      // 本機模擬資料庫 (當尚未填入 API_URL 時自動運作)
-      let db = JSON.parse(localStorage.getItem("boar_local_db") || "[]");
-      if (db.length === 0) {
-        db = [
-          { account: "boar_king", password: "123", displayName: "山豬大隊長", avatar: "https://seankuo0105.github.io/boar/pig4k.png", points: 1280, title: "【SSR】傳說黃金神豬👑", lastSign: "", freeRename: 0, titles: ["初階小野豬", "【SSR】傳說黃金神豬👑"] },
-          { account: "fan01", password: "123", displayName: "愛吃地瓜的豬", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=BoarKing", points: 650, title: "【SR】山豬實行鐵粉🔥", lastSign: "", freeRename: 1, titles: ["初階小野豬"] }
-        ];
-        localStorage.setItem("boar_local_db", JSON.stringify(db));
-      }
-
-      const idx = db.findIndex(u => u.account === payload.account);
-      if (payload.action === 'register') {
-        if (idx !== -1) return { success: false, message: "這個帳號已經有人註冊過囉！" };
-        const newUser = {
-          account: payload.account,
-          password: payload.password,
-          displayName: payload.displayName || ("山豬村民#" + Math.floor(100 + Math.random()*900)),
-          avatar: "https://seankuo0105.github.io/boar/pig4k.png",
-          points: 100,
-          title: "初階小野豬",
-          lastSign: "",
-          freeRename: 1,
-          titles: ["初階小野豬"]
-        };
-        db.push(newUser);
-        localStorage.setItem("boar_local_db", JSON.stringify(db));
-        return { success: true, message: "註冊成功！獲得 100 點數！", userData: newUser };
-      }
-      if (payload.action === 'login') {
-        if (idx === -1) return { success: false, message: "找不到此帳號，請先切換到「註冊新帳號」！" };
-        if (db[idx].password !== payload.password) return { success: false, message: "密碼不正確喔！" };
-        return { success: true, message: "登入成功！歡迎回來！", userData: db[idx] };
-      }
-      if (payload.action === 'updateUser') {
-        if (idx !== -1) {
-          db[idx] = { ...db[idx], ...payload };
-          localStorage.setItem("boar_local_db", JSON.stringify(db));
-        }
-        return { success: true };
-      }
-      if (payload.action === 'leaderboard') {
-        const sorted = [...db].sort((a,b) => b.points - a.points);
-        return { success: true, leaderboard: sorted };
-      }
-      if (payload.action === 'feedback') {
-        return { success: true, message: "感謝回饋！我們已經收到您的寶貴意見！" };
-      }
+  // 🔥 防雙開視窗刷 Bug：只要玩家切換分頁或點回此視窗，立刻向試算表拉取最新點數！
+  window.addEventListener("focus", () => {
+    if (currentUser && currentUser.account) {
+      syncWithCloud(currentUser.account, true);
     }
+  });
 
-    // 處理登入
-    async function handleLogin() {
-      const acc = document.getElementById("login-acc").value.trim();
-      const pw = document.getElementById("login-pw").value.trim();
-      if (!acc || !pw) return showToast("請輸入帳號與密碼！");
-      const res = await callServer({ action: 'login', account: acc, password: pw });
-      showToast(res.message);
-      if (res.success) {
-        currentUser = res.userData;
-        if (!currentUser.titles) currentUser.titles = [currentUser.title || "初階小野豬"];
-        saveCurrentUser();
-        enterDashboard();
-      }
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 3000);
+  }
+
+  function switchAuthTab(mode) {
+    document.getElementById("tab-btn-login").classList.toggle("active", mode === 'login');
+    document.getElementById("tab-btn-register").classList.toggle("active", mode === 'register');
+    document.getElementById("login-form").style.display = mode === 'login' ? "block" : "none";
+    document.getElementById("register-form").style.display = mode === 'register' ? "block" : "none";
+  }
+
+  // 純雲端通訊函式 (使用 text/plain 確保不會被瀏覽器 CORS 阻擋)
+  async function callServer(payload) {
+    if (!API_URL || API_URL.includes("請把你的")) {
+      showToast("⚠️ 尚未設定 Google Script API_URL 網址！");
+      return { success: false, message: "請先在程式碼中填入 API_URL" };
     }
-
-    // 處理註冊
-    async function handleRegister() {
-      const acc = document.getElementById("reg-acc").value.trim();
-      const name = document.getElementById("reg-name").value.trim();
-      const pw = document.getElementById("reg-pw").value.trim();
-      const pw2 = document.getElementById("reg-pw2").value.trim();
-      if (!acc || !pw) return showToast("帳號與密碼不能空白喔！");
-      if (pw !== pw2) return showToast("兩次輸入的密碼不一致！");
-      const res = await callServer({ action: 'register', account: acc, password: pw, displayName: name });
-      showToast(res.message);
-      if (res.success) {
-        currentUser = res.userData;
-        currentUser.titles = ["初階小野豬"];
-        saveCurrentUser();
-        enterDashboard();
-      }
-    }
-
-    function saveCurrentUser() {
-      localStorage.setItem("boar_active_user", JSON.stringify(currentUser));
-      callServer({
-        action: 'updateUser',
-        account: currentUser.account,
-        displayName: currentUser.displayName,
-        avatar: currentUser.avatar,
-        points: currentUser.points,
-        title: currentUser.title,
-        lastSign: currentUser.lastSign,
-        freeRename: currentUser.freeRename,
-        titles: currentUser.titles
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
       });
+      return await res.json();
+    } catch (e) {
+      showToast("❌ 網路連線失敗，為防止刷點數已取消操作！");
+      return { success: false, message: "網路連線異常" };
+    }
+  }
+
+  // 強制與雲端試算表同步最新資料
+  async function syncWithCloud(acc, silent = false) {
+    if (isSyncing) return;
+    isSyncing = true;
+    const res = await callServer({ action: 'sync', account: acc });
+    isSyncing = false;
+    if (res && res.success && res.userData) {
+      currentUser = res.userData;
+      enterDashboard();
+      if (!silent) showToast("⚡ 已同步雲端最新點數！");
+    } else if (!silent) {
+      logout();
+    }
+  }
+
+  async function handleLogin() {
+    const acc = document.getElementById("login-acc").value.trim();
+    const pw = document.getElementById("login-pw").value.trim();
+    if (!acc || !pw) return showToast("請輸入帳號與密碼！");
+    showToast("連線至雲端資料庫驗證中...");
+    const res = await callServer({ action: 'login', account: acc, password: pw });
+    showToast(res.message);
+    if (res.success) {
+      currentUser = res.userData;
+      localStorage.setItem("boar_session_acc", currentUser.account);
+      enterDashboard();
+    }
+  }
+
+  async function handleRegister() {
+    const acc = document.getElementById("reg-acc").value.trim();
+    const name = document.getElementById("reg-name").value.trim();
+    const pw = document.getElementById("reg-pw").value.trim();
+    const pw2 = document.getElementById("reg-pw2").value.trim();
+    if (!acc || !pw) return showToast("帳號與密碼不能空白喔！");
+    if (pw !== pw2) return showToast("兩次輸入的密碼不一致！");
+    showToast("正在寫入雲端試算表...");
+    const res = await callServer({ action: 'register', account: acc, password: pw, displayName: name });
+    showToast(res.message);
+    if (res.success) {
+      currentUser = res.userData;
+      localStorage.setItem("boar_session_acc", currentUser.account);
+      enterDashboard();
+    }
+  }
+
+  function enterDashboard() {
+    document.getElementById("auth-section").style.display = "none";
+    document.getElementById("app-section").style.display = "grid";
+    document.getElementById("header-user").style.display = "flex";
+    renderUserUI();
+    updateGameButtonsCooldown();
+  }
+
+  function renderUserUI() {
+    if (!currentUser) return;
+    document.getElementById("top-points").innerText = currentUser.points;
+    document.getElementById("side-name").innerText = currentUser.displayName;
+    document.getElementById("side-acc").innerText = currentUser.account;
+    document.getElementById("side-title").innerText = currentUser.title;
+    document.getElementById("side-avatar").src = currentUser.avatar || "https://seankuo0105.github.io/boar/pig4k.png";
+    document.getElementById("avatar-url-input").value = currentUser.avatar || "";
+
+    const today = new Date().toISOString().split('T')[0];
+    const chkBtn = document.getElementById("checkin-btn");
+    if (currentUser.lastSign === today) {
+      chkBtn.disabled = true;
+      chkBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> 今日已簽到`;
+    } else {
+      chkBtn.disabled = false;
+      chkBtn.innerHTML = `<span class="material-symbols-outlined">event_available</span> 每日簽到 (+50點)`;
+    }
+
+    const tip = document.getElementById("rename-cost-tip");
+    if (currentUser.freeRename > 0) {
+      tip.style.color = "var(--success)";
+      tip.innerText = `✨ 您還享有 ${currentUser.freeRename} 次【首次免費改名】額度！`;
+    } else {
+      tip.style.color = "var(--primary-hover)";
+      tip.innerText = `💡 免費額度已用完，每次修改名稱需花費 100 點數。`;
+    }
+
+    const wrap = document.getElementById("owned-titles");
+    wrap.innerHTML = "";
+    const titles = getOwnedTitles(currentUser.account, currentUser.title);
+    titles.forEach(t => {
+      const span = document.createElement("span");
+      span.className = "title-tag" + (t === currentUser.title ? " equipped" : "");
+      span.innerText = t;
+      span.onclick = async () => {
+        const res = await callServer({ action: 'updateProfile', account: currentUser.account, equipTitle: t });
+        if (res.success) {
+          currentUser = res.userData;
+          renderUserUI();
+          showToast(res.message);
+        }
+      };
+      wrap.appendChild(span);
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem("boar_session_acc");
+    currentUser = null;
+    document.getElementById("auth-section").style.display = "block";
+    document.getElementById("app-section").style.display = "none";
+    document.getElementById("header-user").style.display = "none";
+    showToast("已安全登出！");
+  }
+
+  function switchNav(paneId, btn) {
+    document.querySelectorAll(".tab-pane").forEach(el => el.classList.remove("active"));
+    document.getElementById("pane-" + paneId).classList.add("active");
+    document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
+    btn.classList.add("active");
+    if (currentUser) syncWithCloud(currentUser.account, true);
+    if (paneId === 'leaderboard') loadLeaderboard();
+  }
+
+  // 每日簽到 (傳送給雲端驗證並直接寫入)
+  async function dailyCheckIn() {
+    const chkBtn = document.getElementById("checkin-btn");
+    chkBtn.disabled = true;
+    const today = new Date().toISOString().split('T')[0];
+    const res = await callServer({ action: 'checkin', account: currentUser.account, today: today });
+    if (res.userData) {
+      currentUser = res.userData;
       renderUserUI();
     }
+    showToast(res.message);
+  }
 
-    function enterDashboard() {
-      document.getElementById("auth-section").style.display = "none";
-      document.getElementById("app-section").style.display = "grid";
-      document.getElementById("header-user").style.display = "flex";
+  // 實境轉蛋抽稱號 (由雲端扣點與開獎)
+  async function spinGacha() {
+    if (isSyncing) return;
+    isSyncing = true;
+    document.getElementById("gacha-result").innerText = "雲端轉蛋機運轉中...";
+    const res = await callServer({ action: 'gacha', account: currentUser.account });
+    isSyncing = false;
+    if (res.userData) {
+      currentUser = res.userData;
+      getOwnedTitles(currentUser.account, res.picked);
       renderUserUI();
-      updateGameButtonsCooldown();
-      loadLeaderboard();
     }
-
-    function renderUserUI() {
-      document.getElementById("top-points").innerText = currentUser.points;
-      document.getElementById("side-name").innerText = currentUser.displayName;
-      document.getElementById("side-acc").innerText = currentUser.account;
-      document.getElementById("side-title").innerText = currentUser.title;
-      document.getElementById("side-avatar").src = currentUser.avatar || "https://seankuo0105.github.io/boar/pig4k.png";
-      document.getElementById("avatar-url-input").value = currentUser.avatar || "";
-
-      // 檢查今日簽到狀態
-      const today = new Date().toISOString().split('T')[0];
-      const chkBtn = document.getElementById("checkin-btn");
-      if (currentUser.lastSign === today) {
-        chkBtn.disabled = true;
-        chkBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> 今日已簽到`;
-      } else {
-        chkBtn.disabled = false;
-        chkBtn.innerHTML = `<span class="material-symbols-outlined">event_available</span> 每日簽到 (+50點)`;
-      }
-
-      // 檢查免費改名次數
-      const tip = document.getElementById("rename-cost-tip");
-      if (currentUser.freeRename > 0) {
-        tip.style.color = "var(--success)";
-        tip.innerText = `✨ 您還享有 ${currentUser.freeRename} 次【首次免費改名】額度！`;
-      } else {
-        tip.style.color = "var(--primary-hover)";
-        tip.innerText = `💡 免費額度已用完，每次修改名稱需花費 100 點數。`;
-      }
-
-      // 渲染擁有的稱號
-      const wrap = document.getElementById("owned-titles");
-      wrap.innerHTML = "";
-      (currentUser.titles || [currentUser.title]).forEach(t => {
-        const span = document.createElement("span");
-        span.className = "title-tag" + (t === currentUser.title ? " equipped" : "");
-        span.innerText = t;
-        span.onclick = () => {
-          currentUser.title = t;
-          saveCurrentUser();
-          showToast(`已裝備稱號：${t}`);
-        };
-        wrap.appendChild(span);
-      });
-    }
-
-    function logout() {
-      localStorage.removeItem("boar_active_user");
-      currentUser = null;
-      document.getElementById("auth-section").style.display = "block";
-      document.getElementById("app-section").style.display = "none";
-      document.getElementById("header-user").style.display = "none";
-      showToast("已安全登出！");
-    }
-
-    function switchNav(paneId, btn) {
-      document.querySelectorAll(".tab-pane").forEach(el => el.classList.remove("active"));
-      document.getElementById("pane-" + paneId).classList.add("active");
-      document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
-      btn.classList.add("active");
-      if (paneId === 'leaderboard') loadLeaderboard();
-    }
-
-    // 每日簽到
-    function dailyCheckIn() {
-      const today = new Date().toISOString().split('T')[0];
-      if (currentUser.lastSign === today) return;
-      currentUser.points += 50;
-      currentUser.lastSign = today;
-      saveCurrentUser();
-      showToast("🎉 簽到成功！獲得 50 點數！");
-    }
-
-    // 實境轉蛋抽稱號
-    function spinGacha() {
-      if (currentUser.points < 100) return showToast("點數不足 100 點，快去玩小遊戲賺點數吧！");
-      currentUser.points -= 100;
-      const rand = Math.random();
-      let sum = 0, picked = GACHA_POOL[GACHA_POOL.length - 1].title;
-      for (let item of GACHA_POOL) {
-        sum += item.rate;
-        if (rand <= sum) { picked = item.title; break; }
-      }
-      if (!currentUser.titles) currentUser.titles = ["初階小野豬"];
-      if (!currentUser.titles.includes(picked)) currentUser.titles.push(picked);
-      currentUser.title = picked;
-      saveCurrentUser();
+    if (res.success) {
       document.getElementById("gacha-ball").innerText = "🎊";
-      document.getElementById("gacha-result").innerText = `抽中：${picked}`;
-      showToast(`恭喜抽中稱號：${picked}！`);
+      document.getElementById("gacha-result").innerText = `抽中：${res.picked}`;
+    } else {
+      document.getElementById("gacha-result").innerText = res.message;
     }
+    showToast(res.message);
+  }
 
-    // 雙倍或全無
-    function setBet(val) {
-      const inp = document.getElementById("bet-input");
-      if (val === 'half') inp.value = Math.max(10, Math.floor(currentUser.points / 2));
-      else if (val === 'all') inp.value = Math.max(10, currentUser.points);
-      else inp.value = val;
+  // 雙倍或全無 (完全由雲端試算表判定餘額與輸贏，杜絕雙開刷點！)
+  function setBet(val) {
+    const inp = document.getElementById("bet-input");
+    if (val === 'half') inp.value = Math.max(10, Math.floor(currentUser.points / 2));
+    else if (val === 'all') inp.value = Math.max(10, currentUser.points);
+    else inp.value = val;
+  }
+
+  async function playDoubleOrNothing() {
+    if (isSyncing) return showToast("正在與雲端同步中，請稍候！");
+    const bet = parseInt(document.getElementById("bet-input").value, 10);
+    if (isNaN(bet) || bet <= 0) return showToast("請輸入有效的押注點數！");
+
+    isSyncing = true;
+    const box = document.getElementById("bet-status");
+    box.style.background = "#f1f5f9";
+    box.style.color = "#334155";
+    box.innerText = "🎲 雲端擲骰驗證中...";
+
+    const res = await callServer({ action: 'bet', account: currentUser.account, bet: bet });
+    isSyncing = false;
+
+    if (res.userData) {
+      currentUser = res.userData;
+      renderUserUI();
     }
-
-    function playDoubleOrNothing() {
-      const bet = parseInt(document.getElementById("bet-input").value, 10);
-      if (isNaN(bet) || bet <= 0) return showToast("請輸入有效的押注點數！");
-      if (bet > currentUser.points) return showToast("你的點數不夠押注這麼多喔！");
-      
-      const win = Math.random() < 0.5;
-      const box = document.getElementById("bet-status");
-      if (win) {
-        currentUser.points += bet;
-        box.style.background = "#dcfce7";
-        box.style.color = "#166534";
-        box.innerText = `🎉 挑戰成功！翻倍贏得 +${bet} 點數！`;
-        showToast(`太神啦！贏得 ${bet} 點數！`);
-      } else {
-        currentUser.points -= bet;
-        box.style.background = "#fee2e2";
-        box.style.color = "#991b1b";
-        box.innerText = `💥 挑戰失敗！損失了 -${bet} 點數...`;
-        showToast(`噗嚕！差一點點，損失 ${bet} 點數`);
-      }
-      saveCurrentUser();
+    if (res.success) {
+      box.style.background = res.win ? "#dcfce7" : "#fee2e2";
+      box.style.color = res.win ? "#166534" : "#991b1b";
+      box.innerText = res.message;
+    } else {
+      box.innerText = res.message;
     }
+    showToast(res.message);
+  }
 
-    // 全球點數排行榜
-    async function loadLeaderboard() {
-      const res = await callServer({ action: 'leaderboard' });
-      const container = document.getElementById("leaderboard-list");
-      container.innerHTML = "";
-      if (res.success && res.leaderboard) {
-        res.leaderboard.forEach((u, idx) => {
-          const div = document.createElement("div");
-          div.className = `rank-item ${idx === 0 ? 'top-1' : idx === 1 ? 'top-2' : idx === 2 ? 'top-3' : ''}`;
-          const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : (idx + 1);
-          div.innerHTML = `
-            <div class="rank-left">
-              <div class="rank-num">${medal}</div>
-              <img class="rank-avatar" src="${u.avatar || 'https://seankuo0105.github.io/boar/pig4k.png'}">
-              <div>
-                <div style="font-weight: 800;">${u.displayName}</div>
-                <span class="user-title-badge" style="margin:2px 0 0; font-size:0.7rem;">${u.title}</span>
-              </div>
+  async function loadLeaderboard() {
+    const container = document.getElementById("leaderboard-list");
+    container.innerHTML = "<p style='color:var(--text-sub);'>正在從雲端試算表載入最新排行...</p>";
+    const res = await callServer({ action: 'leaderboard' });
+    container.innerHTML = "";
+    if (res.success && res.leaderboard) {
+      res.leaderboard.forEach((u, idx) => {
+        const div = document.createElement("div");
+        div.className = `rank-item ${idx === 0 ? 'top-1' : idx === 1 ? 'top-2' : idx === 2 ? 'top-3' : ''}`;
+        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : (idx + 1);
+        div.innerHTML = `
+          <div class="rank-left">
+            <div class="rank-num">${medal}</div>
+            <img class="rank-avatar" src="${u.avatar || 'https://seankuo0105.github.io/boar/pig4k.png'}">
+            <div>
+              <div style="font-weight: 800;">${u.displayName}</div>
+              <span class="user-title-badge" style="margin:2px 0 0; font-size:0.7rem;">${u.title}</span>
             </div>
-            <div style="font-weight: 900; color: #b45309; font-size: 1.05rem;">${u.points} 點</div>
-          `;
-          container.appendChild(div);
-        });
-      }
+          </div>
+          <div style="font-weight: 900; color: #b45309; font-size: 1.05rem;">${u.points} 點</div>
+        `;
+        container.appendChild(div);
+      });
     }
+  }
 
-    // 修改顯示名稱 (第一次免費)
-    function changeDisplayName() {
-      const newName = document.getElementById("new-name-input").value.trim();
-      if (!newName) return showToast("請輸入新的顯示名稱！");
-      if (currentUser.freeRename > 0) {
-        currentUser.freeRename -= 1;
-        currentUser.displayName = newName;
-        saveCurrentUser();
-        showToast("修改成功！已使用首次免費改名額度！");
+  async function changeDisplayName() {
+    const newName = document.getElementById("new-name-input").value.trim();
+    if (!newName) return showToast("請輸入新的顯示名稱！");
+    const res = await callServer({ action: 'updateProfile', account: currentUser.account, newName: newName });
+    if (res.userData) {
+      currentUser = res.userData;
+      renderUserUI();
+    }
+    showToast(res.message);
+    if (res.success) document.getElementById("new-name-input").value = "";
+  }
+
+  function selectPresetAvatar(url) {
+    document.getElementById("avatar-url-input").value = url;
+    saveAvatar();
+  }
+
+  async function saveAvatar() {
+    const url = document.getElementById("avatar-url-input").value.trim();
+    if (!url) return showToast("請輸入有效的圖片網址！");
+    const res = await callServer({ action: 'updateProfile', account: currentUser.account, avatar: url });
+    if (res.userData) {
+      currentUser = res.userData;
+      renderUserUI();
+    }
+    showToast(res.message);
+  }
+
+  async function sendFeedback() {
+    const content = document.getElementById("feedback-text").value.trim();
+    if (!content) return showToast("請先填寫回饋內容喔！");
+    const res = await callServer({ action: 'feedback', account: currentUser.account, content });
+    showToast(res.message);
+    if (res.success) document.getElementById("feedback-text").value = "";
+  }
+
+  // 小遊戲冷卻與過關雲端入帳
+  const GAME_COOLDOWN = 3600 * 1000;
+  function getCooldownKey(gameId) { return `cd_${currentUser ? currentUser.account : 'guest'}_${gameId}`; }
+
+  function updateGameButtonsCooldown() {
+    if (!currentUser) return;
+    const games = ['needle', 'mine', 'sort', 'match', 'pipe'];
+    const now = Date.now();
+    games.forEach(g => {
+      const last = parseInt(localStorage.getItem(getCooldownKey(g)) || "0", 10);
+      const btn = document.getElementById("gbtn-" + g);
+      if (!btn) return;
+      if (now - last < GAME_COOLDOWN) {
+        const mins = Math.ceil((GAME_COOLDOWN - (now - last)) / 60000);
+        btn.disabled = true;
+        btn.innerText = `冷卻中 (${mins}分後可玩)`;
       } else {
-        if (currentUser.points < 100) return showToast("點數不足 100 點，無法改名喔！");
-        currentUser.points -= 100;
-        currentUser.displayName = newName;
-        saveCurrentUser();
-        showToast("已花費 100 點數完成改名！");
+        btn.disabled = false;
+        btn.innerText = "開始挑戰";
       }
-      document.getElementById("new-name-input").value = "";
-    }
+    });
+  }
 
-    function selectPresetAvatar(url) {
-      document.getElementById("avatar-url-input").value = url;
-      saveAvatar();
+  async function rewardGameWin(gameId, pts, title) {
+    localStorage.setItem(getCooldownKey(gameId), Date.now().toString());
+    updateGameButtonsCooldown();
+    const stage = document.getElementById("game-stage");
+    stage.innerHTML = `<p style="font-weight:800;">⚡ 正在將過關點數寫入雲端資料庫...</p>`;
+    
+    const res = await callServer({ action: 'rewardGame', account: currentUser.account, pts: pts });
+    if (res.userData) {
+      currentUser = res.userData;
+      renderUserUI();
     }
+    stage.innerHTML = `
+      <div style="font-size: 3.5rem;">🏆</div>
+      <h3 style="margin: 10px 0; color: var(--success);">挑戰成功！完成【${title}】</h3>
+      <p style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">雲端已入帳 +${pts} 點數！</p>
+      <button class="btn-primary" style="margin-top: 18px;" onclick="closeGameModal()">開心收下點數</button>
+    `;
+  }
 
-    function saveAvatar() {
-      const url = document.getElementById("avatar-url-input").value.trim();
-      if (!url) return showToast("請輸入有效的圖片網址！");
-      currentUser.avatar = url;
-      saveCurrentUser();
-      showToast("個人頭像已更新！");
-    }
+  function closeGameModal() {
+    if (activeGameTimer) cancelAnimationFrame(activeGameTimer);
+    document.getElementById("game-modal").style.display = "none";
+  }
 
-    async function sendFeedback() {
-      const content = document.getElementById("feedback-text").value.trim();
-      if (!content) return showToast("請先填寫回饋內容喔！");
-      const res = await callServer({ action: 'feedback', account: currentUser.account, content });
-      showToast(res.message);
-      document.getElementById("feedback-text").value = "";
-    }
+  function openGame(type) {
+    if (activeGameTimer) cancelAnimationFrame(activeGameTimer);
+    document.getElementById("game-modal").style.display = "flex";
+    const stage = document.getElementById("game-stage");
+    stage.innerHTML = "";
+    if (type === 'needle') initNeedleGame(stage);
+    else if (type === 'mine') initMineGame(stage);
+    else if (type === 'sort') initSortGame(stage);
+    else if (type === 'match') initMatchGame(stage);
+    else if (type === 'pipe') initPipeGame(stage);
+  }
+
+  // (下方保留原本的 5 個遊戲函式：initNeedleGame, initMineGame, initSortGame, initMatchGame, initPipeGame 即可！)
 
     // ==========================================
     // 🎮 5 款免跳轉內嵌小遊戲與 1 小時冷卻機制
