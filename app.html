@@ -5,263 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>山豬實行｜官方會員中心</title>
   <link rel="icon" href="https://seankuo0105.github.io/boar/pig4k.png" type="image/png">
-  <!-- 引入 Google Fonts Material Symbols 圖示 -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-main: #f4f7f9;
-      --bg-card: #ffffff;
-      --text-main: #1e293b;
-      --text-sub: #64748b;
-      --primary: #f59e0b;
-      --primary-hover: #d97706;
-      --accent: #3b82f6;
-      --success: #10b981;
-      --danger: #ef4444;
-      --border: #e2e8f0;
-      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+      --bg-main: #f4f7f9; --bg-card: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
+      --primary: #f59e0b; --primary-hover: #d97706; --accent: #3b82f6; --success: #10b981;
+      --danger: #ef4444; --border: #e2e8f0; --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans TC', sans-serif; }
     body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
     
-    /* 頂部導覽列 */
-    header {
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-    }
+    header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
     .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 1.25rem; color: var(--text-main); }
     .brand img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; border: 2px solid var(--primary); }
-    
     .user-bar { display: flex; align-items: center; gap: 16px; }
-    .points-pill {
-      background: #fef3c7;
-      color: #b45309;
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.95rem;
-      border: 1px solid #fde68a;
-    }
+    .points-pill { background: #fef3c7; color: #b45309; padding: 6px 14px; border-radius: 999px; font-weight: 700; display: flex; align-items: center; gap: 6px; font-size: 0.95rem; border: 1px solid #fde68a; }
 
-    /* 按鈕通用樣式 */
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
+    button { border: none; border-radius: 10px; padding: 10px 18px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; }
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
     .btn-accent { background: var(--accent); color: white; }
-    .btn-accent:hover { background: #2563eb; transform: translateY(-1px); }
     .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: #059669; }
     .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-main); }
-    .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
     .btn-danger { background: #fee2e2; color: var(--danger); }
-    .btn-danger:hover { background: #fecaca; }
     button:disabled { background: #e2e8f0 !important; color: #94a3b8 !important; cursor: not-allowed; transform: none !important; }
 
-    /* 登入與註冊獨立卡片 */
-    #auth-section {
-      max-width: 420px;
-      width: 92%;
-      margin: 60px auto;
-      background: var(--bg-card);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-    .auth-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: #f1f5f9;
-      padding: 5px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-    }
-    .auth-tab {
-      padding: 10px;
-      text-align: center;
-      font-weight: 700;
-      color: var(--text-sub);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+    #auth-section { max-width: 420px; width: 92%; margin: 60px auto; background: var(--bg-card); border-radius: 20px; padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; background: #f1f5f9; padding: 5px; border-radius: 12px; margin-bottom: 24px; }
+    .auth-tab { padding: 10px; text-align: center; font-weight: 700; color: var(--text-sub); border-radius: 8px; cursor: pointer; transition: 0.2s; }
     .auth-tab.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .form-group { margin-bottom: 16px; text-align: left; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; }
-    input, textarea, select {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.95rem;
-      background: #f8fafc;
-      color: var(--text-main);
-      outline: none;
-      transition: 0.2s;
-    }
+    input, textarea, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.95rem; background: #f8fafc; color: var(--text-main); outline: none; transition: 0.2s; }
     input:focus, textarea:focus { border-color: var(--primary); background: white; }
 
-    /* 主介面佈局 */
-    #app-section {
-      display: none;
-      max-width: 1180px;
-      width: 95%;
-      margin: 24px auto;
-      grid-template-columns: 260px 1fr;
-      gap: 24px;
-      flex: 1;
-    }
-    @media (max-width: 820px) {
-      #app-section { grid-template-columns: 1fr; }
-    }
-
-    /* 左側個人資訊與導覽欄 */
+    #app-section { display: none; max-width: 1180px; width: 95%; margin: 24px auto; grid-template-columns: 260px 1fr; gap: 24px; flex: 1; }
+    @media (max-width: 820px) { #app-section { grid-template-columns: 1fr; } }
+    
     .sidebar { display: flex; flex-direction: column; gap: 20px; }
-    .profile-card {
-      background: var(--bg-card);
-      border-radius: 18px;
-      padding: 24px 20px;
-      text-align: center;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
+    .profile-card { background: var(--bg-card); border-radius: 18px; padding: 24px 20px; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow); }
     .avatar-wrap { position: relative; width: 88px; height: 88px; margin: 0 auto 12px; }
     .avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); background: #fff; }
-    .user-title-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #fef3c7, #fde68a);
-      color: #92400e;
-      font-size: 0.78rem;
-      font-weight: 800;
-      padding: 4px 12px;
-      border-radius: 99px;
-      margin: 6px 0 10px;
-    }
-    .nav-menu {
-      background: var(--bg-card);
-      border-radius: 18px;
-      padding: 10px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .nav-btn {
-      width: 100%;
-      justify-content: flex-start;
-      background: transparent;
-      color: var(--text-sub);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-weight: 600;
-    }
-    .nav-btn:hover { background: #f8fafc; color: var(--text-main); }
+    .user-title-badge { display: inline-block; background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; font-size: 0.78rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; margin: 6px 0 10px; }
+    .nav-menu { background: var(--bg-card); border-radius: 18px; padding: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; }
+    .nav-btn { width: 100%; justify-content: flex-start; background: transparent; color: var(--text-sub); padding: 12px 16px; border-radius: 12px; font-weight: 600; }
     .nav-btn.active { background: #fffbeb; color: #b45309; font-weight: 800; }
 
-    /* 右側內容面板 */
-    .content-panel {
-      background: var(--bg-card);
-      border-radius: 20px;
-      padding: 28px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      min-height: 540px;
-    }
+    .content-panel { background: var(--bg-card); border-radius: 20px; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow); min-height: 540px; }
     .tab-pane { display: none; }
     .tab-pane.active { display: block; animation: fadeIn 0.25s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
     .section-title { font-size: 1.35rem; font-weight: 900; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
     .section-desc { color: var(--text-sub); font-size: 0.9rem; margin-bottom: 24px; }
 
-    /* 遊戲卡片網格 */
     .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
-    .game-card {
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 14px;
-      background: #fafafa;
-      transition: 0.2s;
-    }
+    .game-card { border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; background: #fafafa; transition: 0.2s; }
     .game-card:hover { border-color: var(--primary); background: #fff; box-shadow: var(--shadow); }
-    .game-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: #fffbeb; color: var(--primary);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px;
-    }
+    .game-icon { width: 48px; height: 48px; border-radius: 12px; background: #fffbeb; color: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
     .game-reward { font-size: 0.82rem; font-weight: 700; color: var(--success); }
 
-    /* 娛樂城與轉蛋卡片 */
     .split-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .feature-box {
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      background: #fcfcfd;
-    }
-    .gacha-machine {
-      text-align: center;
-      padding: 24px;
-      background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-      border-radius: 16px;
-      border: 2px dashed #fcd34d;
-      margin: 16px 0;
-    }
+    .feature-box { border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; background: #fcfcfd; }
+    .gacha-machine { text-align: center; padding: 24px; background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%); border-radius: 16px; border: 2px dashed #fcd34d; margin: 16px 0; }
     .title-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .title-tag {
-      padding: 6px 12px;
-      border-radius: 99px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      border: 1.5px solid var(--border);
-      cursor: pointer;
-      background: white;
-    }
+    .title-tag { padding: 6px 12px; border-radius: 99px; font-size: 0.82rem; font-weight: 700; border: 1.5px solid var(--border); cursor: pointer; background: white; }
     .title-tag.equipped { border-color: var(--primary); background: #fef3c7; color: #92400e; }
 
-    /* 排行榜表格 */
     .rank-list { display: flex; flex-direction: column; gap: 10px; }
-    .rank-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 18px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #f8fafc;
-    }
+    .rank-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border); background: #f8fafc; }
     .rank-item.top-1 { background: #fefce8; border-color: #fde047; }
     .rank-item.top-2 { background: #f8fafc; border-color: #cbd5e1; }
     .rank-item.top-3 { background: #fff7ed; border-color: #fdba74; }
@@ -269,68 +82,13 @@
     .rank-num { font-weight: 900; font-size: 1.1rem; width: 28px; text-align: center; color: var(--text-sub); }
     .rank-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
 
-    /* 小遊戲視窗 (Modal) */
-    #game-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(4px);
-      z-index: 999;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .modal-box {
-      background: var(--bg-card);
-      border-radius: 22px;
-      max-width: 520px;
-      width: 100%;
-      padding: 24px;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-      text-align: center;
-    }
+    #game-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 16px; }
+    .modal-box { background: var(--bg-card); border-radius: 22px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-    #game-stage {
-      min-height: 340px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #f8fafc;
-      border-radius: 14px;
-      padding: 16px;
-      border: 1px solid var(--border);
-    }
-
-    /* 踩地雷、消除、接水管網格 */
+    #game-stage { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; border-radius: 14px; padding: 16px; border: 1px solid var(--border); }
     .grid-board { display: grid; gap: 6px; margin: 12px auto; }
-    .cell-btn {
-      width: 46px; height: 46px;
-      border-radius: 8px;
-      font-size: 1.2rem;
-      font-weight: 800;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
-      border: 2px solid #cbd5e1;
-      color: var(--text-main);
-    }
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: #1e293b;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-weight: 600;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
-      display: none;
-      z-index: 2000;
-    }
+    .cell-btn { width: 46px; height: 46px; border-radius: 8px; font-size: 1.2rem; font-weight: 800; padding: 0; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #cbd5e1; color: var(--text-main); }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); display: none; z-index: 2000; }
   </style>
 </head>
 <body>
@@ -352,7 +110,7 @@
     </div>
   </header>
 
-  <!-- 1. 獨立分開的【登入 / 註冊】介面 -->
+  <!-- 登入與註冊介面 -->
   <section id="auth-section">
     <div style="text-align: center; margin-bottom: 20px;">
       <img src="https://seankuo0105.github.io/boar/pig4k.png" width="64" height="64" style="border-radius: 16px; border: 2px solid var(--primary);">
@@ -365,53 +123,30 @@
       <div class="auth-tab" id="tab-btn-register" onclick="switchAuthTab('register')">註冊新帳號</div>
     </div>
 
-    <!-- 登入表單 -->
     <div id="login-form">
-      <div class="form-group">
-        <label>帳號</label>
-        <input type="text" id="login-acc" placeholder="請輸入您的會員帳號">
-      </div>
-      <div class="form-group">
-        <label>密碼</label>
-        <input type="password" id="login-pw" placeholder="請輸入密碼">
-      </div>
+      <div class="form-group"><label>帳號</label><input type="text" id="login-acc" placeholder="請輸入您的會員帳號"></div>
+      <div class="form-group"><label>密碼</label><input type="password" id="login-pw" placeholder="請輸入密碼"></div>
       <button class="btn-primary" style="width: 100%; padding: 13px;" onclick="handleLogin()">
         <span class="material-symbols-outlined">login</span> 立即登入
       </button>
     </div>
 
-    <!-- 註冊表單 (完全獨立) -->
     <div id="register-form" style="display: none;">
-      <div class="form-group">
-        <label>設定帳號</label>
-        <input type="text" id="reg-acc" placeholder="英數組合，作為登入使用">
-      </div>
-      <div class="form-group">
-        <label>設定顯示名稱</label>
-        <input type="text" id="reg-name" placeholder="大家在排行榜看到的名字">
-      </div>
-      <div class="form-group">
-        <label>設定密碼</label>
-        <input type="password" id="reg-pw" placeholder="請設定密碼">
-      </div>
-      <div class="form-group">
-        <label>確認密碼</label>
-        <input type="password" id="reg-pw2" placeholder="請再次輸入密碼">
-      </div>
+      <div class="form-group"><label>設定帳號</label><input type="text" id="reg-acc" placeholder="英數組合，作為登入使用"></div>
+      <div class="form-group"><label>設定顯示名稱</label><input type="text" id="reg-name" placeholder="大家在排行榜看到的名字"></div>
+      <div class="form-group"><label>設定密碼</label><input type="password" id="reg-pw" placeholder="請設定密碼"></div>
+      <div class="form-group"><label>確認密碼</label><input type="password" id="reg-pw2" placeholder="請再次輸入密碼"></div>
       <button class="btn-accent" style="width: 100%; padding: 13px;" onclick="handleRegister()">
         <span class="material-symbols-outlined">person_add</span> 免費註冊領 100 點數
       </button>
     </div>
   </section>
 
-  <!-- 2. 登入後主系統介面 -->
+  <!-- 主系統介面 -->
   <main id="app-section">
-    <!-- 左側個人欄與選單 -->
     <aside class="sidebar">
       <div class="profile-card">
-        <div class="avatar-wrap">
-          <img id="side-avatar" src="https://seankuo0105.github.io/boar/pig4k.png" alt="Avatar">
-        </div>
+        <div class="avatar-wrap"><img id="side-avatar" src="https://seankuo0105.github.io/boar/pig4k.png" alt="Avatar"></div>
         <h3 id="side-name" style="font-weight: 900; font-size: 1.15rem;">載入中...</h3>
         <div class="user-title-badge" id="side-title">初階小野豬</div>
         <p style="font-size: 0.8rem; color: var(--text-sub);">帳號：<span id="side-acc"></span></p>
@@ -422,232 +157,121 @@
       </div>
 
       <nav class="nav-menu">
-        <button class="nav-btn active" onclick="switchNav('games', this)">
-          <span class="material-symbols-outlined">stadia_controller</span> 遊樂場賺點 (5款)
-        </button>
-        <button class="nav-btn" onclick="switchNav('casino', this)">
-          <span class="material-symbols-outlined">casino</span> 實境轉蛋 & 雙倍豪賭
-        </button>
-        <button class="nav-btn" onclick="switchNav('leaderboard', this)">
-          <span class="material-symbols-outlined">leaderboard</span> 全球點數排行榜
-        </button>
-        <button class="nav-btn" onclick="switchNav('settings', this)">
-          <span class="material-symbols-outlined">settings</span> 個人設定 (改名/頭像)
-        </button>
-        <button class="nav-btn" onclick="switchNav('feedback', this)">
-          <span class="material-symbols-outlined">mail</span> 發送意見回饋
-        </button>
+        <button class="nav-btn active" onclick="switchNav('games', this)"><span class="material-symbols-outlined">stadia_controller</span> 遊樂場賺點 (5款)</button>
+        <button class="nav-btn" onclick="switchNav('casino', this)"><span class="material-symbols-outlined">casino</span> 實境轉蛋 & 雙倍豪賭</button>
+        <button class="nav-btn" onclick="switchNav('leaderboard', this)"><span class="material-symbols-outlined">leaderboard</span> 全球點數排行榜</button>
+        <button class="nav-btn" onclick="switchNav('settings', this)"><span class="material-symbols-outlined">settings</span> 個人設定 (改名/頭像)</button>
+        <button class="nav-btn" onclick="switchNav('feedback', this)"><span class="material-symbols-outlined">mail</span> 發送意見回饋</button>
       </nav>
     </aside>
 
-    <!-- 右側動態內容區 -->
     <section class="content-panel">
-      
-      <!-- 分頁 1：5 款免跳轉小遊戲 -->
+      <!-- 遊戲 -->
       <div id="pane-games" class="tab-pane active">
-        <div class="section-title">
-          <span class="material-symbols-outlined" style="color: var(--primary);">sports_esports</span> 會員專屬賺點遊樂場
-        </div>
-        <p class="section-desc">直接在網頁內遊玩免跳轉！每款小遊戲挑戰成功即可獲得點數，每款遊戲每小時可領取一次獎勵。</p>
-        
+        <div class="section-title"><span class="material-symbols-outlined" style="color: var(--primary);">sports_esports</span> 會員專屬賺點遊樂場</div>
+        <p class="section-desc">挑戰小遊戲賺取點數，每款遊戲每小時可領取一次獎勵。過關由雲端自動審核防作弊！</p>
         <div class="games-grid">
           <div class="game-card">
-            <div>
-              <div class="game-icon"><span class="material-symbols-outlined">gps_fixed</span></div>
-              <h4>見縫插針</h4>
-              <p style="font-size: 0.83rem; color: var(--text-sub); margin-top: 4px;">抓準時機將 6 根飛針插入旋轉木樁，不能撞針！</p>
-            </div>
-            <div>
-              <div class="game-reward">過關獎勵：+40 點數</div>
-              <button id="gbtn-needle" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('needle')">開始挑戰</button>
-            </div>
+            <div><div class="game-icon"><span class="material-symbols-outlined">gps_fixed</span></div><h4>見縫插針</h4><p style="font-size: 0.83rem; color: var(--text-sub);">抓準時機插入 6 根飛針，不能撞針！</p></div>
+            <div><div class="game-reward">過關獎勵：+40 點數</div><button id="gbtn-needle" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('needle')">開始挑戰</button></div>
           </div>
-
           <div class="game-card">
-            <div>
-              <div class="game-icon"><span class="material-symbols-outlined">grid_on</span></div>
-              <h4>山豬踩地雷</h4>
-              <p style="font-size: 0.83rem; color: var(--text-sub); margin-top: 4px;">4x4 精簡版安全探索，避開 2 顆隱藏炸彈翻開安全格！</p>
-            </div>
-            <div>
-              <div class="game-reward">過關獎勵：+50 點數</div>
-              <button id="gbtn-mine" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('mine')">開始挑戰</button>
-            </div>
+            <div><div class="game-icon"><span class="material-symbols-outlined">grid_on</span></div><h4>山豬踩地雷</h4><p style="font-size: 0.83rem; color: var(--text-sub);">避開隱藏炸彈，翻開安全格！</p></div>
+            <div><div class="game-reward">過關獎勵：+50 點數</div><button id="gbtn-mine" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('mine')">開始挑戰</button></div>
           </div>
-
           <div class="game-card">
-            <div>
-              <div class="game-icon"><span class="material-symbols-outlined">category</span></div>
-              <h4>極速分類遊戲</h4>
-              <p style="font-size: 0.83rem; color: var(--text-sub); margin-top: 4px;">考驗反應！將隨機出現的物品正確分類至「山豬愛吃」或「不能吃」！</p>
-            </div>
-            <div>
-              <div class="game-reward">過關獎勵：+35 點數</div>
-              <button id="gbtn-sort" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('sort')">開始挑戰</button>
-            </div>
+            <div><div class="game-icon"><span class="material-symbols-outlined">category</span></div><h4>極速分類</h4><p style="font-size: 0.83rem; color: var(--text-sub);">將隨機物品正確分類至能不能吃！</p></div>
+            <div><div class="game-reward">過關獎勵：+35 點數</div><button id="gbtn-sort" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('sort')">開始挑戰</button></div>
           </div>
-
           <div class="game-card">
-            <div>
-              <div class="game-icon"><span class="material-symbols-outlined">apps</span></div>
-              <h4>消除方塊</h4>
-              <p style="font-size: 0.83rem; color: var(--text-sub); margin-top: 4px;">點擊相鄰同色方塊進行消除，累積滿 60 分即可通關！</p>
-            </div>
-            <div>
-              <div class="game-reward">過關獎勵：+45 點數</div>
-              <button id="gbtn-match" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('match')">開始挑戰</button>
-            </div>
+            <div><div class="game-icon"><span class="material-symbols-outlined">apps</span></div><h4>消除方塊</h4><p style="font-size: 0.83rem; color: var(--text-sub);">點擊相鄰同色方塊累積滿 60 分通關！</p></div>
+            <div><div class="game-reward">過關獎勵：+45 點數</div><button id="gbtn-match" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('match')">開始挑戰</button></div>
           </div>
-
           <div class="game-card">
-            <div>
-              <div class="game-icon"><span class="material-symbols-outlined">plumbing</span></div>
-              <h4>山豬接水管</h4>
-              <p style="font-size: 0.83rem; color: var(--text-sub); margin-top: 4px;">點擊旋轉彎曲的水管，讓水源順利從左方流向山豬農場！</p>
-            </div>
-            <div>
-              <div class="game-reward">過關獎勵：+50 點數</div>
-              <button id="gbtn-pipe" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('pipe')">開始挑戰</button>
-            </div>
+            <div><div class="game-icon"><span class="material-symbols-outlined">plumbing</span></div><h4>山豬接水管</h4><p style="font-size: 0.83rem; color: var(--text-sub);">轉動水管讓水源順利流向農場！</p></div>
+            <div><div class="game-reward">過關獎勵：+50 點數</div><button id="gbtn-pipe" class="btn-primary" style="width: 100%; margin-top: 8px;" onclick="openGame('pipe')">開始挑戰</button></div>
           </div>
         </div>
       </div>
 
-      <!-- 分頁 2：實境轉蛋抽稱號 & 雙倍或全無 -->
+      <!-- 轉蛋 & 賭博 -->
       <div id="pane-casino" class="tab-pane">
-        <div class="section-title">
-          <span class="material-symbols-outlined" style="color: var(--primary);">attractions</span> 實境轉蛋機 & 雙倍或全無
-        </div>
+        <div class="section-title"><span class="material-symbols-outlined" style="color: var(--primary);">attractions</span> 實境轉蛋機 & 雙倍或全無</div>
         <p class="section-desc">用賺來的點數試試手氣！抽取稀有頭銜稱號，或自訂押注金額挑戰翻倍刺激感。</p>
-
         <div class="split-grid">
-          <!-- 實境轉蛋 -->
           <div class="feature-box">
             <h4>🎁 實境轉蛋抽稱號 (每次 100 點數)</h4>
-            <p style="font-size: 0.84rem; color: var(--text-sub); margin-top: 4px;">有機率抽出 SSR 傳說級稱號，抽中後可直接點擊裝備顯示在排行榜！</p>
-            <div class="gacha-machine">
-              <div id="gacha-ball" style="font-size: 3rem;">🔮</div>
-              <div id="gacha-result" style="font-weight: 800; margin-top: 8px; color: var(--primary);">準備開抽！</div>
-            </div>
-            <button class="btn-primary" style="width: 100%;" onclick="spinGacha()">
-              <span class="material-symbols-outlined">redeem</span> 花費 100 點數轉蛋
-            </button>
-            <div style="margin-top: 16px;">
-              <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-sub);">已解鎖稱號 (點擊更換裝備)：</label>
-              <div class="title-tags" id="owned-titles"></div>
-            </div>
+            <div class="gacha-machine"><div id="gacha-ball" style="font-size: 3rem;">🔮</div><div id="gacha-result" style="font-weight: 800; margin-top: 8px; color: var(--primary);">準備開抽！</div></div>
+            <button class="btn-primary" style="width: 100%;" onclick="spinGacha()"><span class="material-symbols-outlined">redeem</span> 花費 100 點數轉蛋</button>
+            <div style="margin-top: 16px;"><label style="font-size: 0.82rem; font-weight: 700; color: var(--text-sub);">已解鎖稱號 (點擊更換裝備)：</label><div class="title-tags" id="owned-titles"></div></div>
           </div>
-
-          <!-- 雙倍或全無 -->
           <div class="feature-box">
             <h4>🎲 雙倍或全無 (Double or Nothing)</h4>
-            <p style="font-size: 0.84rem; color: var(--text-sub); margin-top: 4px;">自訂想押注的點數數量！50% 機率直接翻倍贏回，50% 機率全數充公！</p>
             <div style="margin: 20px 0;">
               <label style="font-size: 0.85rem; font-weight: 700;">輸入押注點數：</label>
               <input type="number" id="bet-input" min="10" value="50" style="margin-top: 6px; font-size: 1.1rem; font-weight: 800;">
               <div style="display: flex; gap: 8px; margin-top: 8px;">
                 <button class="btn-outline" style="flex:1; padding: 6px;" onclick="setBet(50)">50</button>
-                <button class="btn-outline" style="flex:1; padding: 6px;" onclick="setBet(100)">100</button>
                 <button class="btn-outline" style="flex:1; padding: 6px;" onclick="setBet('half')">1/2半倉</button>
                 <button class="btn-outline" style="flex:1; padding: 6px;" onclick="setBet('all')">All-in全押</button>
               </div>
             </div>
-            <div id="bet-status" style="padding: 14px; border-radius: 12px; background: #f1f5f9; text-align: center; font-weight: 800; margin-bottom: 14px;">
-              準備好挑戰心臟極限了嗎？🐗💦
-            </div>
-            <button class="btn-accent" style="width: 100%; padding: 13px;" onclick="playDoubleOrNothing()">
-              <span class="material-symbols-outlined">bolt</span> 立即開賭！(50% 翻倍)
-            </button>
+            <div id="bet-status" style="padding: 14px; border-radius: 12px; background: #f1f5f9; text-align: center; font-weight: 800; margin-bottom: 14px;">準備好挑戰心臟極限了嗎？🐗💦</div>
+            <button class="btn-accent" style="width: 100%; padding: 13px;" onclick="playDoubleOrNothing()"><span class="material-symbols-outlined">bolt</span> 立即開賭！(50% 翻倍)</button>
           </div>
         </div>
       </div>
 
-      <!-- 分頁 3：全球點數排行榜 -->
+      <!-- 排行榜 -->
       <div id="pane-leaderboard" class="tab-pane">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <div>
-            <div class="section-title">
-              <span class="material-symbols-outlined" style="color: var(--primary);">emoji_events</span> 全球點數排行榜
-            </div>
-            <p class="section-desc" style="margin-bottom: 0;">即時統計所有山豬實行會員的點數與裝備稱號排行。</p>
-          </div>
-          <button class="btn-outline" onclick="loadLeaderboard()">
-            <span class="material-symbols-outlined">refresh</span> 重新整理
-          </button>
+          <div><div class="section-title"><span class="material-symbols-outlined" style="color: var(--primary);">emoji_events</span> 全球點數排行榜</div></div>
+          <button class="btn-outline" onclick="loadLeaderboard()"><span class="material-symbols-outlined">refresh</span> 重新整理</button>
         </div>
         <div class="rank-list" id="leaderboard-list"></div>
       </div>
 
-      <!-- 分頁 4：個人設定 (設置頭像 & 改顯示名稱第一次免費) -->
+      <!-- 設定 -->
       <div id="pane-settings" class="tab-pane">
-        <div class="section-title">
-          <span class="material-symbols-outlined" style="color: var(--primary);">manage_accounts</span> 帳戶與個人化設定
-        </div>
-        <p class="section-desc">自由更換個人頭像與修改顯示名稱。</p>
-
+        <div class="section-title"><span class="material-symbols-outlined" style="color: var(--primary);">manage_accounts</span> 帳戶與個人化設定</div>
         <div class="split-grid">
           <div class="feature-box">
             <h4>🏷️ 修改顯示名稱</h4>
-            <p id="rename-cost-tip" style="font-size: 0.85rem; color: var(--success); font-weight: 700; margin: 8px 0 14px;">
-              ✨ 您還享有 1 次【首次免費改名】額度！
-            </p>
-            <div class="form-group">
-              <label>新顯示名稱</label>
-              <input type="text" id="new-name-input" placeholder="輸入新的帥氣名稱">
-            </div>
-            <button class="btn-primary" style="width: 100%;" onclick="changeDisplayName()">
-              <span class="material-symbols-outlined">edit</span> 確認修改名稱
-            </button>
+            <p id="rename-cost-tip" style="font-size: 0.85rem; color: var(--success); font-weight: 700; margin: 8px 0 14px;">✨ 您還享有 1 次【首次免費改名】額度！</p>
+            <div class="form-group"><label>新顯示名稱</label><input type="text" id="new-name-input" placeholder="輸入新的帥氣名稱"></div>
+            <button class="btn-primary" style="width: 100%;" onclick="changeDisplayName()"><span class="material-symbols-outlined">edit</span> 確認修改名稱</button>
           </div>
-
           <div class="feature-box">
             <h4>🖼️ 設置個人頭像</h4>
-            <p style="font-size: 0.85rem; color: var(--text-sub); margin: 8px 0 12px;">點擊下方預設頭像快速套用，或貼上自訂圖片網址：</p>
             <div style="display: flex; gap: 10px; margin-bottom: 14px;">
               <img src="https://seankuo0105.github.io/boar/pig4k.png" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--primary);" onclick="selectPresetAvatar(this.src)">
-              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=BoarKing" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border); background:#fff;" onclick="selectPresetAvatar(this.src)">
-              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Piggy" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border); background:#fff;" onclick="selectPresetAvatar(this.src)">
-              <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=WildBoar" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border); background:#fff;" onclick="selectPresetAvatar(this.src)">
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=BoarKing" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border);" onclick="selectPresetAvatar(this.src)">
+              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Piggy" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border);" onclick="selectPresetAvatar(this.src)">
+              <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=WildBoar" width="48" height="48" style="border-radius:50%; cursor:pointer; border:2px solid var(--border);" onclick="selectPresetAvatar(this.src)">
             </div>
-            <div class="form-group">
-              <label>自訂圖片網址 (URL)</label>
-              <input type="url" id="avatar-url-input" placeholder="https://...">
-            </div>
-            <button class="btn-accent" style="width: 100%;" onclick="saveAvatar()">
-              <span class="material-symbols-outlined">check_circle</span> 儲存頭像設置
-            </button>
+            <div class="form-group"><label>自訂圖片網址 (URL)</label><input type="url" id="avatar-url-input" placeholder="https://..."></div>
+            <button class="btn-accent" style="width: 100%;" onclick="saveAvatar()"><span class="material-symbols-outlined">check_circle</span> 儲存頭像設置</button>
           </div>
         </div>
       </div>
 
-      <!-- 分頁 5：發送回饋功能 -->
+      <!-- 回饋 -->
       <div id="pane-feedback" class="tab-pane">
-        <div class="section-title">
-          <span class="material-symbols-outlined" style="color: var(--primary);">forum</span> 發送意見回饋
-        </div>
-        <p class="section-desc">對「山豬實行」YouTube 頻道或會員網站有任何建議、BUG 回報或企劃點子，歡迎直接傳送給我們！</p>
+        <div class="section-title"><span class="material-symbols-outlined" style="color: var(--primary);">forum</span> 發送意見回饋</div>
         <div class="feature-box" style="max-width: 600px;">
-          <div class="form-group">
-            <label>您的回饋內容</label>
-            <textarea id="feedback-text" rows="5" placeholder="請輸入您的想法或建議..."></textarea>
-          </div>
-          <button class="btn-primary" onclick="sendFeedback()">
-            <span class="material-symbols-outlined">send</span> 送出回饋至後台試算表
-          </button>
+          <div class="form-group"><label>您的回饋內容</label><textarea id="feedback-text" rows="5" placeholder="請輸入您的想法或建議..."></textarea></div>
+          <button class="btn-primary" onclick="sendFeedback()"><span class="material-symbols-outlined">send</span> 送出回饋至後台</button>
         </div>
       </div>
-
     </section>
   </main>
 
-  <!-- 免跳轉內嵌小遊戲彈窗 -->
+  <!-- 小遊戲彈窗 -->
   <div id="game-modal">
     <div class="modal-box">
       <div class="modal-header">
         <h3 id="modal-game-title" style="font-weight: 900;">小遊戲</h3>
-        <button class="btn-outline" style="padding: 6px 10px;" onclick="closeGameModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+        <button class="btn-outline" style="padding: 6px 10px;" onclick="closeGameModal()"><span class="material-symbols-outlined">close</span></button>
       </div>
       <div id="game-stage"></div>
     </div>
@@ -655,395 +279,307 @@
 
   <div id="toast" class="toast"></div>
 
- <script>
-  // ==========================================
-  // 📌 請填入你部署後的 Google Apps Script 網址
-  // ==========================================
-  const API_URL = "https://script.google.com/macros/s/AKfycbzXxR7MvwxQkYo73YV-ZsI3Qn-JqD3kqOa-11Bdtwccx2zICKjzHAUSh-1Qe3eMMTIP/exec"; 
+  <script>
+    // ==========================================
+    // 📌 【最重要】請將你的 Google Script 網址貼在下方引號內
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbzXxR7MvwxQkYo73YV-ZsI3Qn-JqD3kqOa-11Bdtwccx2zICKjzHAUSh-1Qe3eMMTIP/exec"; 
 
-  let currentUser = null;
-  let activeGameTimer = null;
-  let isSyncing = false;
+    let currentUser = null;
+    let activeGameTimer = null;
+    let isSyncing = false;
 
-  // 取得玩家已解鎖的稱號清單 (僅紀錄解鎖過的稱號按鈕，點數與當前稱號一律以雲端為準)
-  function getOwnedTitles(acc, currentTitle) {
-    let list = JSON.parse(localStorage.getItem("boar_titles_" + acc) || '["初階小野豬"]');
-    if (currentTitle && !list.includes(currentTitle)) {
-      list.push(currentTitle);
-      localStorage.setItem("boar_titles_" + acc, JSON.stringify(list));
-    }
-    return list;
-  }
-
-  window.onload = async () => {
-    const savedAcc = localStorage.getItem("boar_session_acc");
-    if (savedAcc) {
-      await syncWithCloud(savedAcc);
-    }
-    setInterval(updateGameButtonsCooldown, 1000);
-  };
-
-  // 🔥 防雙開視窗刷 Bug：只要玩家切換分頁或點回此視窗，立刻向試算表拉取最新點數！
-  window.addEventListener("focus", () => {
-    if (currentUser && currentUser.account) {
-      syncWithCloud(currentUser.account, true);
-    }
-  });
-
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.innerText = msg;
-    t.style.display = "block";
-    setTimeout(() => t.style.display = "none", 3000);
-  }
-
-  function switchAuthTab(mode) {
-    document.getElementById("tab-btn-login").classList.toggle("active", mode === 'login');
-    document.getElementById("tab-btn-register").classList.toggle("active", mode === 'register');
-    document.getElementById("login-form").style.display = mode === 'login' ? "block" : "none";
-    document.getElementById("register-form").style.display = mode === 'register' ? "block" : "none";
-  }
-
-  // 純雲端通訊函式 (使用 text/plain 確保不會被瀏覽器 CORS 阻擋)
-  async function callServer(payload) {
-    if (!API_URL || API_URL.includes("請把你的")) {
-      showToast("⚠️ 尚未設定 Google Script API_URL 網址！");
-      return { success: false, message: "請先在程式碼中填入 API_URL" };
-    }
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-      return await res.json();
-    } catch (e) {
-      showToast("❌ 網路連線失敗，為防止刷點數已取消操作！");
-      return { success: false, message: "網路連線異常" };
-    }
-  }
-
-  // 強制與雲端試算表同步最新資料
-  async function syncWithCloud(acc, silent = false) {
-    if (isSyncing) return;
-    isSyncing = true;
-    const res = await callServer({ action: 'sync', account: acc });
-    isSyncing = false;
-    if (res && res.success && res.userData) {
-      currentUser = res.userData;
-      enterDashboard();
-      if (!silent) showToast("⚡ 已同步雲端最新點數！");
-    } else if (!silent) {
-      logout();
-    }
-  }
-
-  async function handleLogin() {
-    const acc = document.getElementById("login-acc").value.trim();
-    const pw = document.getElementById("login-pw").value.trim();
-    if (!acc || !pw) return showToast("請輸入帳號與密碼！");
-    showToast("連線至雲端資料庫驗證中...");
-    const res = await callServer({ action: 'login', account: acc, password: pw });
-    showToast(res.message);
-    if (res.success) {
-      currentUser = res.userData;
-      localStorage.setItem("boar_session_acc", currentUser.account);
-      enterDashboard();
-    }
-  }
-
-  async function handleRegister() {
-    const acc = document.getElementById("reg-acc").value.trim();
-    const name = document.getElementById("reg-name").value.trim();
-    const pw = document.getElementById("reg-pw").value.trim();
-    const pw2 = document.getElementById("reg-pw2").value.trim();
-    if (!acc || !pw) return showToast("帳號與密碼不能空白喔！");
-    if (pw !== pw2) return showToast("兩次輸入的密碼不一致！");
-    showToast("正在寫入雲端試算表...");
-    const res = await callServer({ action: 'register', account: acc, password: pw, displayName: name });
-    showToast(res.message);
-    if (res.success) {
-      currentUser = res.userData;
-      localStorage.setItem("boar_session_acc", currentUser.account);
-      enterDashboard();
-    }
-  }
-
-  function enterDashboard() {
-    document.getElementById("auth-section").style.display = "none";
-    document.getElementById("app-section").style.display = "grid";
-    document.getElementById("header-user").style.display = "flex";
-    renderUserUI();
-    updateGameButtonsCooldown();
-  }
-
-  function renderUserUI() {
-    if (!currentUser) return;
-    document.getElementById("top-points").innerText = currentUser.points;
-    document.getElementById("side-name").innerText = currentUser.displayName;
-    document.getElementById("side-acc").innerText = currentUser.account;
-    document.getElementById("side-title").innerText = currentUser.title;
-    document.getElementById("side-avatar").src = currentUser.avatar || "https://seankuo0105.github.io/boar/pig4k.png";
-    document.getElementById("avatar-url-input").value = currentUser.avatar || "";
-
-    const today = new Date().toISOString().split('T')[0];
-    const chkBtn = document.getElementById("checkin-btn");
-    if (currentUser.lastSign === today) {
-      chkBtn.disabled = true;
-      chkBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> 今日已簽到`;
-    } else {
-      chkBtn.disabled = false;
-      chkBtn.innerHTML = `<span class="material-symbols-outlined">event_available</span> 每日簽到 (+50點)`;
+    // 取得玩家已解鎖的稱號清單
+    function getOwnedTitles(acc, currentTitle) {
+      let list = JSON.parse(localStorage.getItem("boar_titles_" + acc) || '["初階小野豬"]');
+      if (currentTitle && !list.includes(currentTitle)) {
+        list.push(currentTitle);
+        localStorage.setItem("boar_titles_" + acc, JSON.stringify(list));
+      }
+      return list;
     }
 
-    const tip = document.getElementById("rename-cost-tip");
-    if (currentUser.freeRename > 0) {
-      tip.style.color = "var(--success)";
-      tip.innerText = `✨ 您還享有 ${currentUser.freeRename} 次【首次免費改名】額度！`;
-    } else {
-      tip.style.color = "var(--primary-hover)";
-      tip.innerText = `💡 免費額度已用完，每次修改名稱需花費 100 點數。`;
-    }
+    // 初始化與防雙開同步機制
+    window.onload = async () => {
+      const savedAcc = localStorage.getItem("boar_session_acc");
+      if (savedAcc) {
+        await syncWithCloud(savedAcc);
+      }
+      setInterval(updateGameButtonsCooldown, 1000);
+    };
 
-    const wrap = document.getElementById("owned-titles");
-    wrap.innerHTML = "";
-    const titles = getOwnedTitles(currentUser.account, currentUser.title);
-    titles.forEach(t => {
-      const span = document.createElement("span");
-      span.className = "title-tag" + (t === currentUser.title ? " equipped" : "");
-      span.innerText = t;
-      span.onclick = async () => {
-        const res = await callServer({ action: 'updateProfile', account: currentUser.account, equipTitle: t });
-        if (res.success) {
-          currentUser = res.userData;
-          renderUserUI();
-          showToast(res.message);
-        }
-      };
-      wrap.appendChild(span);
-    });
-  }
-
-  function logout() {
-    localStorage.removeItem("boar_session_acc");
-    currentUser = null;
-    document.getElementById("auth-section").style.display = "block";
-    document.getElementById("app-section").style.display = "none";
-    document.getElementById("header-user").style.display = "none";
-    showToast("已安全登出！");
-  }
-
-  function switchNav(paneId, btn) {
-    document.querySelectorAll(".tab-pane").forEach(el => el.classList.remove("active"));
-    document.getElementById("pane-" + paneId).classList.add("active");
-    document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
-    btn.classList.add("active");
-    if (currentUser) syncWithCloud(currentUser.account, true);
-    if (paneId === 'leaderboard') loadLeaderboard();
-  }
-
-  // 每日簽到 (傳送給雲端驗證並直接寫入)
-  async function dailyCheckIn() {
-    const chkBtn = document.getElementById("checkin-btn");
-    chkBtn.disabled = true;
-    const today = new Date().toISOString().split('T')[0];
-    const res = await callServer({ action: 'checkin', account: currentUser.account, today: today });
-    if (res.userData) {
-      currentUser = res.userData;
-      renderUserUI();
-    }
-    showToast(res.message);
-  }
-
-  // 實境轉蛋抽稱號 (由雲端扣點與開獎)
-  async function spinGacha() {
-    if (isSyncing) return;
-    isSyncing = true;
-    document.getElementById("gacha-result").innerText = "雲端轉蛋機運轉中...";
-    const res = await callServer({ action: 'gacha', account: currentUser.account });
-    isSyncing = false;
-    if (res.userData) {
-      currentUser = res.userData;
-      getOwnedTitles(currentUser.account, res.picked);
-      renderUserUI();
-    }
-    if (res.success) {
-      document.getElementById("gacha-ball").innerText = "🎊";
-      document.getElementById("gacha-result").innerText = `抽中：${res.picked}`;
-    } else {
-      document.getElementById("gacha-result").innerText = res.message;
-    }
-    showToast(res.message);
-  }
-
-  // 雙倍或全無 (完全由雲端試算表判定餘額與輸贏，杜絕雙開刷點！)
-  function setBet(val) {
-    const inp = document.getElementById("bet-input");
-    if (val === 'half') inp.value = Math.max(10, Math.floor(currentUser.points / 2));
-    else if (val === 'all') inp.value = Math.max(10, currentUser.points);
-    else inp.value = val;
-  }
-
-  async function playDoubleOrNothing() {
-    if (isSyncing) return showToast("正在與雲端同步中，請稍候！");
-    const bet = parseInt(document.getElementById("bet-input").value, 10);
-    if (isNaN(bet) || bet <= 0) return showToast("請輸入有效的押注點數！");
-
-    isSyncing = true;
-    const box = document.getElementById("bet-status");
-    box.style.background = "#f1f5f9";
-    box.style.color = "#334155";
-    box.innerText = "🎲 雲端擲骰驗證中...";
-
-    const res = await callServer({ action: 'bet', account: currentUser.account, bet: bet });
-    isSyncing = false;
-
-    if (res.userData) {
-      currentUser = res.userData;
-      renderUserUI();
-    }
-    if (res.success) {
-      box.style.background = res.win ? "#dcfce7" : "#fee2e2";
-      box.style.color = res.win ? "#166534" : "#991b1b";
-      box.innerText = res.message;
-    } else {
-      box.innerText = res.message;
-    }
-    showToast(res.message);
-  }
-
-  async function loadLeaderboard() {
-    const container = document.getElementById("leaderboard-list");
-    container.innerHTML = "<p style='color:var(--text-sub);'>正在從雲端試算表載入最新排行...</p>";
-    const res = await callServer({ action: 'leaderboard' });
-    container.innerHTML = "";
-    if (res.success && res.leaderboard) {
-      res.leaderboard.forEach((u, idx) => {
-        const div = document.createElement("div");
-        div.className = `rank-item ${idx === 0 ? 'top-1' : idx === 1 ? 'top-2' : idx === 2 ? 'top-3' : ''}`;
-        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : (idx + 1);
-        div.innerHTML = `
-          <div class="rank-left">
-            <div class="rank-num">${medal}</div>
-            <img class="rank-avatar" src="${u.avatar || 'https://seankuo0105.github.io/boar/pig4k.png'}">
-            <div>
-              <div style="font-weight: 800;">${u.displayName}</div>
-              <span class="user-title-badge" style="margin:2px 0 0; font-size:0.7rem;">${u.title}</span>
-            </div>
-          </div>
-          <div style="font-weight: 900; color: #b45309; font-size: 1.05rem;">${u.points} 點</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-  }
-
-  async function changeDisplayName() {
-    const newName = document.getElementById("new-name-input").value.trim();
-    if (!newName) return showToast("請輸入新的顯示名稱！");
-    const res = await callServer({ action: 'updateProfile', account: currentUser.account, newName: newName });
-    if (res.userData) {
-      currentUser = res.userData;
-      renderUserUI();
-    }
-    showToast(res.message);
-    if (res.success) document.getElementById("new-name-input").value = "";
-  }
-
-  function selectPresetAvatar(url) {
-    document.getElementById("avatar-url-input").value = url;
-    saveAvatar();
-  }
-
-  async function saveAvatar() {
-    const url = document.getElementById("avatar-url-input").value.trim();
-    if (!url) return showToast("請輸入有效的圖片網址！");
-    const res = await callServer({ action: 'updateProfile', account: currentUser.account, avatar: url });
-    if (res.userData) {
-      currentUser = res.userData;
-      renderUserUI();
-    }
-    showToast(res.message);
-  }
-
-  async function sendFeedback() {
-    const content = document.getElementById("feedback-text").value.trim();
-    if (!content) return showToast("請先填寫回饋內容喔！");
-    const res = await callServer({ action: 'feedback', account: currentUser.account, content });
-    showToast(res.message);
-    if (res.success) document.getElementById("feedback-text").value = "";
-  }
-
-  // 小遊戲冷卻與過關雲端入帳
-  const GAME_COOLDOWN = 3600 * 1000;
-  function getCooldownKey(gameId) { return `cd_${currentUser ? currentUser.account : 'guest'}_${gameId}`; }
-
-  function updateGameButtonsCooldown() {
-    if (!currentUser) return;
-    const games = ['needle', 'mine', 'sort', 'match', 'pipe'];
-    const now = Date.now();
-    games.forEach(g => {
-      const last = parseInt(localStorage.getItem(getCooldownKey(g)) || "0", 10);
-      const btn = document.getElementById("gbtn-" + g);
-      if (!btn) return;
-      if (now - last < GAME_COOLDOWN) {
-        const mins = Math.ceil((GAME_COOLDOWN - (now - last)) / 60000);
-        btn.disabled = true;
-        btn.innerText = `冷卻中 (${mins}分後可玩)`;
-      } else {
-        btn.disabled = false;
-        btn.innerText = "開始挑戰";
+    window.addEventListener("focus", () => {
+      if (currentUser && currentUser.account) {
+        syncWithCloud(currentUser.account, true);
       }
     });
-  }
 
-  async function rewardGameWin(gameId, pts, title) {
-    localStorage.setItem(getCooldownKey(gameId), Date.now().toString());
-    updateGameButtonsCooldown();
-    const stage = document.getElementById("game-stage");
-    stage.innerHTML = `<p style="font-weight:800;">⚡ 正在將過關點數寫入雲端資料庫...</p>`;
-    
-    const res = await callServer({ action: 'rewardGame', account: currentUser.account, pts: pts });
-    if (res.userData) {
-      currentUser = res.userData;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 3000);
+    }
+
+    function switchAuthTab(mode) {
+      document.getElementById("tab-btn-login").classList.toggle("active", mode === 'login');
+      document.getElementById("tab-btn-register").classList.toggle("active", mode === 'register');
+      document.getElementById("login-form").style.display = mode === 'login' ? "block" : "none";
+      document.getElementById("register-form").style.display = mode === 'register' ? "block" : "none";
+    }
+
+    // 呼叫後台試算表
+    async function callServer(payload) {
+      if (!API_URL) {
+        showToast("⚠️ 尚未設定 Google Script API_URL 網址！請至程式碼 286 行設定");
+        return { success: false, message: "請先在程式碼中填入 API_URL" };
+      }
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        return await res.json();
+      } catch (e) {
+        showToast("❌ 網路連線失敗，請檢查 API_URL 是否正確！");
+        return { success: false, message: "網路連線異常" };
+      }
+    }
+
+    async function syncWithCloud(acc, silent = false) {
+      if (isSyncing) return;
+      isSyncing = true;
+      const res = await callServer({ action: 'sync', account: acc });
+      isSyncing = false;
+      if (res && res.success && res.userData) {
+        currentUser = res.userData;
+        enterDashboard();
+        if (!silent) showToast("⚡ 已同步雲端最新資料！");
+      } else if (!silent) {
+        logout();
+      }
+    }
+
+    async function handleLogin() {
+      const acc = document.getElementById("login-acc").value.trim();
+      const pw = document.getElementById("login-pw").value.trim();
+      if (!acc || !pw) return showToast("請輸入帳號與密碼！");
+      showToast("連線至雲端資料庫驗證中...");
+      const res = await callServer({ action: 'login', account: acc, password: pw });
+      
+      if (res.success) {
+        showToast(res.message);
+        currentUser = res.userData;
+        localStorage.setItem("boar_session_acc", currentUser.account);
+        enterDashboard();
+      } else {
+        showToast(res.message);
+      }
+    }
+
+    // ✨ 註冊完自動登入機制 ✨
+    async function handleRegister() {
+      const acc = document.getElementById("reg-acc").value.trim();
+      const name = document.getElementById("reg-name").value.trim();
+      const pw = document.getElementById("reg-pw").value.trim();
+      const pw2 = document.getElementById("reg-pw2").value.trim();
+      if (!acc || !pw) return showToast("帳號與密碼不能空白喔！");
+      if (pw !== pw2) return showToast("兩次輸入的密碼不一致！");
+      
+      showToast("正在寫入雲端試算表...");
+      const res = await callServer({ action: 'register', account: acc, password: pw, displayName: name });
+      
+      if (res.success) {
+        showToast("註冊成功！系統為您自動登入！🎉");
+        currentUser = res.userData;
+        localStorage.setItem("boar_session_acc", currentUser.account);
+        enterDashboard();
+      } else {
+        showToast(res.message);
+      }
+    }
+
+    function enterDashboard() {
+      document.getElementById("auth-section").style.display = "none";
+      document.getElementById("app-section").style.display = "grid";
+      document.getElementById("header-user").style.display = "flex";
       renderUserUI();
-    }
-    stage.innerHTML = `
-      <div style="font-size: 3.5rem;">🏆</div>
-      <h3 style="margin: 10px 0; color: var(--success);">挑戰成功！完成【${title}】</h3>
-      <p style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">雲端已入帳 +${pts} 點數！</p>
-      <button class="btn-primary" style="margin-top: 18px;" onclick="closeGameModal()">開心收下點數</button>
-    `;
-  }
-
-  function closeGameModal() {
-    if (activeGameTimer) cancelAnimationFrame(activeGameTimer);
-    document.getElementById("game-modal").style.display = "none";
-  }
-
-  function openGame(type) {
-    if (activeGameTimer) cancelAnimationFrame(activeGameTimer);
-    document.getElementById("game-modal").style.display = "flex";
-    const stage = document.getElementById("game-stage");
-    stage.innerHTML = "";
-    if (type === 'needle') initNeedleGame(stage);
-    else if (type === 'mine') initMineGame(stage);
-    else if (type === 'sort') initSortGame(stage);
-    else if (type === 'match') initMatchGame(stage);
-    else if (type === 'pipe') initPipeGame(stage);
-  }
-
-  // (下方保留原本的 5 個遊戲函式：initNeedleGame, initMineGame, initSortGame, initMatchGame, initPipeGame 即可！)
-
-    // ==========================================
-    // 🎮 5 款免跳轉內嵌小遊戲與 1 小時冷卻機制
-    // ==========================================
-    const GAME_COOLDOWN = 3600 * 1000; // 1小時 (毫秒)
-
-    function getCooldownKey(gameId) {
-      return `cd_${currentUser ? currentUser.account : 'guest'}_${gameId}`;
+      updateGameButtonsCooldown();
     }
 
+    function renderUserUI() {
+      if (!currentUser) return;
+      document.getElementById("top-points").innerText = currentUser.points;
+      document.getElementById("side-name").innerText = currentUser.displayName;
+      document.getElementById("side-acc").innerText = currentUser.account;
+      document.getElementById("side-title").innerText = currentUser.title;
+      document.getElementById("side-avatar").src = currentUser.avatar || "https://seankuo0105.github.io/boar/pig4k.png";
+      document.getElementById("avatar-url-input").value = currentUser.avatar || "";
+
+      const today = new Date().toISOString().split('T')[0];
+      const chkBtn = document.getElementById("checkin-btn");
+      if (currentUser.lastSign === today) {
+        chkBtn.disabled = true;
+        chkBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> 今日已簽到`;
+      } else {
+        chkBtn.disabled = false;
+        chkBtn.innerHTML = `<span class="material-symbols-outlined">event_available</span> 每日簽到 (+50點)`;
+      }
+
+      const tip = document.getElementById("rename-cost-tip");
+      if (currentUser.freeRename > 0) {
+        tip.style.color = "var(--success)";
+        tip.innerText = `✨ 您還享有 ${currentUser.freeRename} 次【首次免費改名】額度！`;
+      } else {
+        tip.style.color = "var(--primary-hover)";
+        tip.innerText = `💡 免費額度已用完，每次修改名稱需花費 100 點數。`;
+      }
+
+      const wrap = document.getElementById("owned-titles");
+      wrap.innerHTML = "";
+      const titles = getOwnedTitles(currentUser.account, currentUser.title);
+      titles.forEach(t => {
+        const span = document.createElement("span");
+        span.className = "title-tag" + (t === currentUser.title ? " equipped" : "");
+        span.innerText = t;
+        span.onclick = async () => {
+          const res = await callServer({ action: 'updateProfile', account: currentUser.account, equipTitle: t });
+          if (res.success) {
+            currentUser = res.userData;
+            renderUserUI();
+            showToast(res.message);
+          }
+        };
+        wrap.appendChild(span);
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem("boar_session_acc");
+      currentUser = null;
+      document.getElementById("auth-section").style.display = "block";
+      document.getElementById("app-section").style.display = "none";
+      document.getElementById("header-user").style.display = "none";
+      showToast("已安全登出！");
+    }
+
+    function switchNav(paneId, btn) {
+      document.querySelectorAll(".tab-pane").forEach(el => el.classList.remove("active"));
+      document.getElementById("pane-" + paneId).classList.add("active");
+      document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+      if (currentUser) syncWithCloud(currentUser.account, true);
+      if (paneId === 'leaderboard') loadLeaderboard();
+    }
+
+    // 一般功能呼叫
+    async function dailyCheckIn() {
+      const chkBtn = document.getElementById("checkin-btn");
+      chkBtn.disabled = true;
+      const today = new Date().toISOString().split('T')[0];
+      const res = await callServer({ action: 'checkin', account: currentUser.account, today: today });
+      if (res.userData) { currentUser = res.userData; renderUserUI(); }
+      showToast(res.message);
+    }
+
+    async function spinGacha() {
+      if (isSyncing) return;
+      isSyncing = true;
+      document.getElementById("gacha-result").innerText = "雲端轉蛋機運轉中...";
+      const res = await callServer({ action: 'gacha', account: currentUser.account });
+      isSyncing = false;
+      if (res.userData) { currentUser = res.userData; getOwnedTitles(currentUser.account, res.picked); renderUserUI(); }
+      if (res.success) {
+        document.getElementById("gacha-ball").innerText = "🎊";
+        document.getElementById("gacha-result").innerText = `抽中：${res.picked}`;
+      } else {
+        document.getElementById("gacha-result").innerText = res.message;
+      }
+      showToast(res.message);
+    }
+
+    function setBet(val) {
+      const inp = document.getElementById("bet-input");
+      if (val === 'half') inp.value = Math.max(10, Math.floor(currentUser.points / 2));
+      else if (val === 'all') inp.value = Math.max(10, currentUser.points);
+      else inp.value = val;
+    }
+
+    async function playDoubleOrNothing() {
+      if (isSyncing) return showToast("正在與雲端同步中，請稍候！");
+      const bet = parseInt(document.getElementById("bet-input").value, 10);
+      if (isNaN(bet) || bet <= 0) return showToast("請輸入有效的押注點數！");
+      isSyncing = true;
+      const box = document.getElementById("bet-status");
+      box.style.background = "#f1f5f9"; box.style.color = "#334155"; box.innerText = "🎲 雲端擲骰驗證中...";
+      
+      const res = await callServer({ action: 'bet', account: currentUser.account, bet: bet });
+      isSyncing = false;
+      if (res.userData) { currentUser = res.userData; renderUserUI(); }
+      
+      if (res.success) {
+        box.style.background = res.win ? "#dcfce7" : "#fee2e2";
+        box.style.color = res.win ? "#166534" : "#991b1b";
+        box.innerText = res.message;
+      } else {
+        box.innerText = res.message;
+      }
+      showToast(res.message);
+    }
+
+    async function loadLeaderboard() {
+      const container = document.getElementById("leaderboard-list");
+      container.innerHTML = "<p style='color:var(--text-sub);'>正在從雲端試算表載入最新排行...</p>";
+      const res = await callServer({ action: 'leaderboard' });
+      container.innerHTML = "";
+      if (res.success && res.leaderboard) {
+        res.leaderboard.forEach((u, idx) => {
+          const div = document.createElement("div");
+          div.className = `rank-item ${idx === 0 ? 'top-1' : idx === 1 ? 'top-2' : idx === 2 ? 'top-3' : ''}`;
+          const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : (idx + 1);
+          div.innerHTML = `<div class="rank-left"><div class="rank-num">${medal}</div><img class="rank-avatar" src="${u.avatar || 'https://seankuo0105.github.io/boar/pig4k.png'}"><div><div style="font-weight: 800;">${u.displayName}</div><span class="user-title-badge" style="margin:2px 0 0; font-size:0.7rem;">${u.title}</span></div></div><div style="font-weight: 900; color: #b45309; font-size: 1.05rem;">${u.points} 點</div>`;
+          container.appendChild(div);
+        });
+      }
+    }
+
+    async function changeDisplayName() {
+      const newName = document.getElementById("new-name-input").value.trim();
+      if (!newName) return showToast("請輸入新的顯示名稱！");
+      const res = await callServer({ action: 'updateProfile', account: currentUser.account, newName: newName });
+      if (res.userData) { currentUser = res.userData; renderUserUI(); }
+      showToast(res.message);
+      if (res.success) document.getElementById("new-name-input").value = "";
+    }
+
+    function selectPresetAvatar(url) { document.getElementById("avatar-url-input").value = url; saveAvatar(); }
+
+    async function saveAvatar() {
+      const url = document.getElementById("avatar-url-input").value.trim();
+      if (!url) return showToast("請輸入有效的圖片網址！");
+      const res = await callServer({ action: 'updateProfile', account: currentUser.account, avatar: url });
+      if (res.userData) { currentUser = res.userData; renderUserUI(); }
+      showToast(res.message);
+    }
+
+    async function sendFeedback() {
+      const content = document.getElementById("feedback-text").value.trim();
+      if (!content) return showToast("請先填寫回饋內容喔！");
+      const res = await callServer({ action: 'feedback', account: currentUser.account, content });
+      showToast(res.message);
+      if (res.success) document.getElementById("feedback-text").value = "";
+    }
+
+    // ==========================================
+    // 🎮 小遊戲冷卻機制 (防重整 Bug) 與雲端加點
+    // ==========================================
+    const GAME_COOLDOWN = 3600 * 1000;
+    
+    // 利用帳號當作 Key，確保 A 帳號玩過不會卡到 B 帳號
+    function getCooldownKey(gameId) { return `cd_${currentUser ? currentUser.account : 'guest'}_${gameId}`; }
+
+    // 每秒檢查一次按鈕狀態，鎖死防誤觸
     function updateGameButtonsCooldown() {
       if (!currentUser) return;
       const games = ['needle', 'mine', 'sort', 'match', 'pipe'];
@@ -1063,16 +599,26 @@
       });
     }
 
-    function rewardGameWin(gameId, pts, title) {
+    async function rewardGameWin(gameId, pts, title) {
+      // 1. 遊戲一通關，立刻將時間鎖死，並刷新按鈕
       localStorage.setItem(getCooldownKey(gameId), Date.now().toString());
-      currentUser.points += pts;
-      saveCurrentUser();
       updateGameButtonsCooldown();
+      
       const stage = document.getElementById("game-stage");
+      stage.innerHTML = `<p style="font-weight:800; font-size:1.1rem; color:var(--accent);">⚡ 正在將過關點數寫入雲端資料庫...</p>`;
+      
+      // 2. 向雲端試算表要求加點
+      const res = await callServer({ action: 'rewardGame', account: currentUser.account, pts: pts });
+      if (res.userData) {
+        currentUser = res.userData;
+        renderUserUI();
+      }
+      
+      // 3. 顯示入帳成功
       stage.innerHTML = `
         <div style="font-size: 3.5rem;">🏆</div>
         <h3 style="margin: 10px 0; color: var(--success);">挑戰成功！完成【${title}】</h3>
-        <p style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">獲得 +${pts} 點數！</p>
+        <p style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">雲端已入帳 +${pts} 點數！</p>
         <button class="btn-primary" style="margin-top: 18px;" onclick="closeGameModal()">開心收下點數</button>
       `;
     }
@@ -1087,7 +633,6 @@
       document.getElementById("game-modal").style.display = "flex";
       const stage = document.getElementById("game-stage");
       stage.innerHTML = "";
-
       if (type === 'needle') initNeedleGame(stage);
       else if (type === 'mine') initMineGame(stage);
       else if (type === 'sort') initSortGame(stage);
@@ -1095,104 +640,60 @@
       else if (type === 'pipe') initPipeGame(stage);
     }
 
-    // 遊戲 1：見縫插針 (Canvas)
+    // ==========================================
+    // 🎮 以下為 5 款小遊戲實作
+    // ==========================================
+
+    // 遊戲 1：見縫插針
     function initNeedleGame(stage) {
       document.getElementById("modal-game-title").innerText = "🎯 見縫插針 (插滿 6 針過關)";
-      stage.innerHTML = `
-        <canvas id="needle-cv" width="300" height="260" style="background:#fff; border-radius:12px; border:1px solid #e2e8f0;"></canvas>
-        <button class="btn-primary" style="margin-top:12px; width:200px;" id="shoot-btn">發射飛針！</button>
-      `;
-      const cv = document.getElementById("needle-cv");
-      const ctx = cv.getContext("2d");
-      let angle = 0;
-      let pins = [0, Math.PI]; // 初始木樁上有2根針
-      let leftToShoot = 6;
-      let gameOver = false;
-
+      stage.innerHTML = `<canvas id="needle-cv" width="300" height="260" style="background:#fff; border-radius:12px; border:1px solid #e2e8f0;"></canvas>
+        <button class="btn-primary" style="margin-top:12px; width:200px;" id="shoot-btn">發射飛針！</button>`;
+      const ctx = document.getElementById("needle-cv").getContext("2d");
+      let angle = 0, pins = [0, Math.PI], leftToShoot = 6, gameOver = false;
       function render() {
         ctx.clearRect(0, 0, 300, 260);
         angle += 0.035;
-        // 畫出所有旋轉中的針
         pins.forEach(p => {
           const a = p + angle;
-          ctx.beginPath();
-          ctx.moveTo(150, 110);
-          ctx.lineTo(150 + Math.cos(a) * 75, 110 + Math.sin(a) * 75);
-          ctx.strokeStyle = "#334155";
-          ctx.lineWidth = 3;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(150 + Math.cos(a) * 75, 110 + Math.sin(a) * 75, 6, 0, Math.PI * 2);
-          ctx.fillStyle = "#f59e0b";
-          ctx.fill();
+          ctx.beginPath(); ctx.moveTo(150, 110); ctx.lineTo(150 + Math.cos(a)*75, 110 + Math.sin(a)*75);
+          ctx.strokeStyle = "#334155"; ctx.lineWidth = 3; ctx.stroke();
+          ctx.beginPath(); ctx.arc(150 + Math.cos(a)*75, 110 + Math.sin(a)*75, 6, 0, Math.PI*2);
+          ctx.fillStyle = "#f59e0b"; ctx.fill();
         });
-        // 畫中心圓盤
-        ctx.beginPath();
-        ctx.arc(150, 110, 36, 0, Math.PI * 2);
-        ctx.fillStyle = "#1e293b";
-        ctx.fill();
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 16px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(`剩 ${leftToShoot} 針`, 150, 116);
-
+        ctx.beginPath(); ctx.arc(150, 110, 36, 0, Math.PI*2); ctx.fillStyle = "#1e293b"; ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center"; ctx.fillText(`剩 ${leftToShoot} 針`, 150, 116);
         if (!gameOver) activeGameTimer = requestAnimationFrame(render);
       }
       render();
-
       document.getElementById("shoot-btn").onclick = () => {
         if (gameOver) return;
-        const newPinAngle = (Math.PI / 2 - angle) % (Math.PI * 2);
-        // 碰撞檢查
-        const hit = pins.some(p => {
-          let diff = Math.abs(((p - newPinAngle) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
-          return diff < 0.22;
-        });
-        if (hit) {
-          gameOver = true;
-          showToast("撞針啦！再試一次！");
-          setTimeout(() => initNeedleGame(stage), 800);
+        const newPin = (Math.PI/2 - angle) % (Math.PI*2);
+        if (pins.some(p => Math.abs(((p - newPin) % (Math.PI*2) + Math.PI*3) % (Math.PI*2) - Math.PI) < 0.22)) {
+          gameOver = true; showToast("撞針啦！重新挑戰！"); setTimeout(() => initNeedleGame(stage), 800);
         } else {
-          pins.push(newPinAngle);
-          leftToShoot--;
-          if (leftToShoot === 0) {
-            gameOver = true;
-            rewardGameWin('needle', 40, '見縫插針');
-          }
+          pins.push(newPin); leftToShoot--;
+          if (leftToShoot === 0) { gameOver = true; rewardGameWin('needle', 40, '見縫插針'); }
         }
       };
     }
 
-    // 遊戲 2：山豬踩地雷 (4x4 找出 6 個安全格即通關)
+    // 遊戲 2：山豬踩地雷
     function initMineGame(stage) {
       document.getElementById("modal-game-title").innerText = "💣 山豬踩地雷 (翻開 6 個安全格過關)";
-      const mines = new Set();
-      while (mines.size < 3) mines.add(Math.floor(Math.random() * 16));
+      const mines = new Set(); while (mines.size < 3) mines.add(Math.floor(Math.random() * 16));
       let safeCount = 0;
-
-      const info = document.createElement("p");
-      info.style.fontWeight = "700";
-      info.innerText = "進度：已翻開 0 / 6 個安全格";
-      const grid = document.createElement("div");
-      grid.className = "grid-board";
-      grid.style.gridTemplateColumns = "repeat(4, 52px)";
-
+      const info = document.createElement("p"); info.style.fontWeight = "700"; info.innerText = "進度：已翻開 0 / 6 個安全格";
+      const grid = document.createElement("div"); grid.className = "grid-board"; grid.style.gridTemplateColumns = "repeat(4, 52px)";
       for (let i = 0; i < 16; i++) {
-        const btn = document.createElement("button");
-        btn.className = "cell-btn";
-        btn.innerText = "❓";
+        const btn = document.createElement("button"); btn.className = "cell-btn"; btn.innerText = "❓";
         btn.onclick = () => {
           if (btn.disabled) return;
           btn.disabled = true;
           if (mines.has(i)) {
-            btn.style.background = "#fee2e2";
-            btn.innerText = "💥";
-            showToast("踩到炸彈啦！重新佈局中...");
-            setTimeout(() => initMineGame(stage), 900);
+            btn.style.background = "#fee2e2"; btn.innerText = "💥"; showToast("踩到炸彈啦！"); setTimeout(() => initMineGame(stage), 900);
           } else {
-            btn.style.background = "#dcfce7";
-            btn.innerText = "🍠";
-            safeCount++;
+            btn.style.background = "#dcfce7"; btn.innerText = "🍠"; safeCount++;
             info.innerText = `進度：已翻開 ${safeCount} / 6 個安全格`;
             if (safeCount >= 6) rewardGameWin('mine', 50, '山豬踩地雷');
           }
@@ -1202,87 +703,44 @@
       stage.append(info, grid);
     }
 
-    // 遊戲 3：極速分類遊戲 (連續答對 6 題過關)
+    // 遊戲 3：極速分類遊戲
     function initSortGame(stage) {
-      document.getElementById("modal-game-title").innerText = "🗂️ 極速分類 (答對 6 題過關)";
-      const items = [
-        { icon: "🍠", name: "香甜烤地瓜", good: true },
-        { icon: "🌰", name: "森林橡果", good: true },
-        { icon: "🍎", name: "新鮮紅蘋果", good: true },
-        { icon: "🌽", name: "黃金玉米", good: true },
-        { icon: "🔋", name: "廢棄電池", good: false },
-        { icon: "🪨", name: "硬梆梆石頭", good: false },
-        { icon: "🛞", name: "破輪胎", good: false },
-        { icon: "🧴", name: "塑膠空瓶", good: false }
-      ];
-      let score = 0;
-      let current = items[Math.floor(Math.random() * items.length)];
-
+      document.getElementById("modal-game-title").innerText = "🗂️ 極速分類 (連續答對 6 題過關)";
+      const items = [ { icon: "🍠", name: "香甜烤地瓜", good: true }, { icon: "🌰", name: "森林橡果", good: true }, { icon: "🍎", name: "新鮮紅蘋果", good: true }, { icon: "🌽", name: "黃金玉米", good: true }, { icon: "🔋", name: "廢棄電池", good: false }, { icon: "🪨", name: "硬梆梆石頭", good: false }, { icon: "🛞", name: "破輪胎", good: false }, { icon: "🧴", name: "塑膠空瓶", good: false } ];
+      let score = 0, current = items[Math.floor(Math.random() * items.length)];
       function renderSort() {
-        stage.innerHTML = `
-          <p style="font-weight:800; margin-bottom:10px;">進度：${score} / 6</p>
-          <div style="font-size:4rem; margin:10px 0;">${current.icon}</div>
-          <h3 style="margin-bottom:20px;">${current.name}</h3>
-          <div style="display:flex; gap:12px; width:100%;">
-            <button class="btn-success" style="flex:1;" id="sort-yes">🐗 山豬愛吃</button>
-            <button class="btn-danger" style="flex:1;" id="sort-no">🚫 不能吃</button>
-          </div>
-        `;
+        stage.innerHTML = `<p style="font-weight:800; margin-bottom:10px;">進度：${score} / 6</p><div style="font-size:4rem; margin:10px 0;">${current.icon}</div><h3 style="margin-bottom:20px;">${current.name}</h3><div style="display:flex; gap:12px; width:100%;"><button class="btn-success" style="flex:1;" id="sort-yes">🐗 山豬愛吃</button><button class="btn-danger" style="flex:1;" id="sort-no">🚫 不能吃</button></div>`;
         document.getElementById("sort-yes").onclick = () => checkAns(true);
         document.getElementById("sort-no").onclick = () => checkAns(false);
       }
-
       function checkAns(choice) {
         if (choice === current.good) {
-          score++;
-          if (score >= 6) return rewardGameWin('sort', 35, '極速分類');
-          current = items[Math.floor(Math.random() * items.length)];
-          renderSort();
-        } else {
-          showToast("分錯類別囉！進度重置！");
-          score = 0;
-          current = items[Math.floor(Math.random() * items.length)];
-          renderSort();
-        }
+          score++; if (score >= 6) return rewardGameWin('sort', 35, '極速分類');
+        } else { showToast("分錯類別囉！進度重置！"); score = 0; }
+        current = items[Math.floor(Math.random() * items.length)]; renderSort();
       }
       renderSort();
     }
 
-    // 遊戲 4：消除方塊 (點擊同色相鄰方塊累積 60 分)
+    // 遊戲 4：消除方塊
     function initMatchGame(stage) {
-      document.getElementById("modal-game-title").innerText = "🟦 消除方塊 (滿 60 分過關)";
+      document.getElementById("modal-game-title").innerText = "🟦 消除方塊 (累積滿 60 分過關)";
       const colors = ["🟥", "🟦", "🟩", "🟨"];
       let board = Array.from({ length: 16 }, () => colors[Math.floor(Math.random() * colors.length)]);
       let score = 0;
-
       function renderMatch() {
         stage.innerHTML = `<p style="font-weight:800;">目前分數：${score} / 60</p>`;
-        const grid = document.createElement("div");
-        grid.className = "grid-board";
-        grid.style.gridTemplateColumns = "repeat(4, 52px)";
-
+        const grid = document.createElement("div"); grid.className = "grid-board"; grid.style.gridTemplateColumns = "repeat(4, 52px)";
         board.forEach((c, idx) => {
-          const btn = document.createElement("button");
-          btn.className = "cell-btn";
-          btn.innerText = c;
+          const btn = document.createElement("button"); btn.className = "cell-btn"; btn.innerText = c;
           btn.onclick = () => {
-            // 尋找上下左右同色格
-            const r = Math.floor(idx / 4), col = idx % 4;
-            const neighbors = [
-              r > 0 ? (r - 1) * 4 + col : -1,
-              r < 3 ? (r + 1) * 4 + col : -1,
-              col > 0 ? r * 4 + (col - 1) : -1,
-              col < 3 ? r * 4 + (col + 1) : -1
-            ].filter(n => n !== -1 && board[n] === c);
-
+            const r = Math.floor(idx/4), col = idx%4;
+            const neighbors = [ r>0?(r-1)*4+col:-1, r<3?(r+1)*4+col:-1, col>0?r*4+(col-1):-1, col<3?r*4+(col+1):-1 ].filter(n => n !== -1 && board[n] === c);
             if (neighbors.length > 0) {
               score += (neighbors.length + 1) * 10;
               [idx, ...neighbors].forEach(i => board[i] = colors[Math.floor(Math.random() * colors.length)]);
-              if (score >= 60) rewardGameWin('match', 45, '消除方塊');
-              else renderMatch();
-            } else {
-              showToast("請點擊有相鄰同色的方塊喔！");
-            }
+              if (score >= 60) rewardGameWin('match', 45, '消除方塊'); else renderMatch();
+            } else { showToast("請點擊有相鄰同色的方塊喔！"); }
           };
           grid.appendChild(btn);
         });
@@ -1291,34 +749,19 @@
       renderMatch();
     }
 
-    // 遊戲 5：山豬接水管 (將 4 節水管全部轉成水平方向即可通水)
+    // 遊戲 5：山豬接水管
     function initPipeGame(stage) {
-      document.getElementById("modal-game-title").innerText = "🚰 山豬接水管 (把水管全部轉成水平直線)";
-      let pipes = [1, 0, 1, 1]; // 0代表水平導通(━), 1代表垂直阻斷(┃)
-
+      document.getElementById("modal-game-title").innerText = "🚰 山豬接水管 (把水管轉成水平直線)";
+      let pipes = [1, 0, 1, 1]; // 0=水平, 1=垂直
       function renderPipes() {
-        stage.innerHTML = `
-          <p style="font-size:0.9rem; color:var(--text-sub); margin-bottom:14px;">點擊中間的水管旋轉方向，讓左邊的水流到右邊的山豬！</p>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:2rem;">🚰</span>
-            <div id="pipe-row" style="display:flex; gap:6px;"></div>
-            <span style="font-size:2rem;">🐗</span>
-          </div>
-        `;
+        stage.innerHTML = `<p style="font-size:0.9rem; color:var(--text-sub); margin-bottom:14px;">點擊中間的水管旋轉方向，讓水源流向右邊的山豬！</p><div style="display:flex; align-items:center; gap:8px;"><span style="font-size:2rem;">🚰</span><div id="pipe-row" style="display:flex; gap:6px;"></div><span style="font-size:2rem;">🐗</span></div>`;
         const row = document.getElementById("pipe-row");
         pipes.forEach((state, i) => {
-          const btn = document.createElement("button");
-          btn.className = "cell-btn";
-          btn.style.background = state === 0 ? "#dbeafe" : "#fff";
-          btn.style.color = "#1d4ed8";
-          btn.innerText = state === 0 ? "━" : "┃";
+          const btn = document.createElement("button"); btn.className = "cell-btn";
+          btn.style.background = state === 0 ? "#dbeafe" : "#fff"; btn.style.color = "#1d4ed8"; btn.innerText = state === 0 ? "━" : "┃";
           btn.onclick = () => {
             pipes[i] = pipes[i] === 0 ? 1 : 0;
-            if (pipes.every(p => p === 0)) {
-              rewardGameWin('pipe', 50, '山豬接水管');
-            } else {
-              renderPipes();
-            }
+            if (pipes.every(p => p === 0)) rewardGameWin('pipe', 50, '山豬接水管'); else renderPipes();
           };
           row.appendChild(btn);
         });
